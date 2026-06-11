@@ -1,0 +1,88 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- FUNCIONES DE AYUDA (HELPERS) ---
+    
+    function isAdmin() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // CAMBIO: Ahora verifica el token de autenticación nativo de Firebase
+    function isVerified() {
+      return request.auth.token.email_verified == true;
+    }
+    
+    function isValidReview() {
+      let data = request.resource.data;
+      return data.calificacion >= 1 && data.calificacion <= 5 &&
+             data.comentario is string && data.comentario.size() > 0 && data.comentario.size() < 2000;
+    }
+
+    // --- REGLAS POR COLECCIÓN ---
+
+    match /inmobiliarias/{inmobiliariaId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /usuarios/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId); // Permitir creación inicial libre para el registro
+      allow update: if isOwner(userId) || isAdmin(); 
+      allow delete: if isAdmin();
+
+      match /notificaciones/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isSignedIn() && request.resource.data.fromUserId == request.auth.uid;
+        allow update, delete: if isOwner(userId);
+      }
+    }
+
+    match /resenas/{resenaId} {
+      allow read: if true;
+      allow create: if isSignedIn() && 
+                    isVerified() && // REVISA TOKEN NATIVO
+                    request.resource.data.usuarioId == request.auth.uid && 
+                    isValidReview();
+      allow update: if isAdmin() || 
+                    (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'dislikedBy', 'replies']));
+      allow delete: if resource.data.usuarioId == request.auth.uid || isAdmin();
+    }
+
+    match /solicitudesRevision/{solicitudId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /forum_topics/{topicId} {
+      allow read: if true;
+      allow create: if (isSignedIn() && isVerified() && request.resource.data.userId == request.auth.uid && request.resource.data.content.size() < 5000) || isAdmin();
+      allow update: if (resource.data.userId == request.auth.uid) || isAdmin() ||
+                    (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'views', 'replyCount']));
+      allow delete: if resource.data.userId == request.auth.uid || isAdmin();
+    }
+
+    match /forum_replies/{replyId} {
+      allow read: if true;
+      allow create: if (isSignedIn() && isVerified() && request.resource.data.userId == request.auth.uid && request.resource.data.content.size() < 2000) || isAdmin();
+      allow update: if (resource.data.userId == request.auth.uid) || isAdmin() ||
+                    (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+      allow delete: if resource.data.userId == request.auth.uid || isAdmin();
+    }
+  }
+}

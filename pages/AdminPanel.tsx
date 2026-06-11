@@ -6,7 +6,7 @@ import { BuildingOfficeIcon, UserIcon, DocumentIcon, UploadIcon, MagnifyingGlass
 import { ConfirmationModal } from '../components/SharedComponents';
 import { mockForumTopics, mockForumReplies } from '../mockForumData';
 import { blogPosts as seedBlogPosts } from '../blogData';
-
+import { top20AgenciesData } from '../top20AgenciesData';
 const { Timestamp } = firebase.firestore;
 
 // --- Sub-components for Admin ---
@@ -187,6 +187,7 @@ export const AdminPanel: React.FC<{ agencies: Inmobiliaria[]; users: Usuario[]; 
     const [isSeeding, setIsSeeding] = useState(false);
     const [seedStatus, setSeedStatus] = useState<string>('');
     const [isSeedingBlog, setIsSeedingBlog] = useState(false);
+    const [isSeedingAgencies, setIsSeedingAgencies] = useState(false);
 
     const filteredAdminAgencies = useMemo(() => agencies.filter(a => a.nombre.toLowerCase().includes(adminSearchTerm.toLowerCase())), [agencies, adminSearchTerm]);
     const filteredUsers = useMemo(() => users.filter(u => u.nombre.toLowerCase().includes(adminSearchTerm.toLowerCase()) || u.email.toLowerCase().includes(adminSearchTerm.toLowerCase())), [users, adminSearchTerm]);
@@ -312,6 +313,33 @@ export const AdminPanel: React.FC<{ agencies: Inmobiliaria[]; users: Usuario[]; 
         }
     };
 
+    const handleSeedTop20Agencies = async () => {
+        if (!auth.currentUser) {
+            alert("No hay usuario autenticado.");
+            return;
+        }
+        
+        setIsSeedingAgencies(true);
+        try {
+            const batch = db.batch();
+            let count = 0;
+            
+            top20AgenciesData.forEach((agency) => {
+                const docRef = db.collection('inmobiliarias').doc();
+                batch.set(docRef, agency);
+                count++;
+            });
+
+            await batch.commit();
+            alert(`¡Éxito! Se han subido ${count} inmobiliarias a Firestore.`);
+        } catch (error: any) {
+            console.error("Error seeding agencies:", error);
+            alert(`Error al guardar inmobiliarias: ${error.message}`);
+        } finally {
+            setIsSeedingAgencies(false);
+        }
+    };
+
     return (
         <main className="container mx-auto px-4 pt-24 pb-8">
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -332,6 +360,14 @@ export const AdminPanel: React.FC<{ agencies: Inmobiliaria[]; users: Usuario[]; 
                     >
                         {isSeedingBlog ? <SpinnerIcon className="w-4 h-4"/> : <PlusIcon className="w-4 h-4"/>}
                         Inicializar Blog
+                    </button>
+                    <button 
+                        onClick={handleSeedTop20Agencies} 
+                        disabled={isSeedingAgencies}
+                        className={`bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-indigo-700 transition shadow-md flex items-center gap-2 text-sm ${isSeedingAgencies ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                        {isSeedingAgencies ? <SpinnerIcon className="w-4 h-4"/> : <PlusIcon className="w-4 h-4"/>}
+                        Inicializar Top 20 Inmobiliarias
                     </button>
                 </div>
             </div>

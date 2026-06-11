@@ -15,7 +15,8 @@ jobs:
         run: npm ci && npm run build
       - name: Deploy to Firebase
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-credentials.json
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VERITAS_INMUEBLE_2 }}
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_VERITAS_INMUEBLE_2 }}" > /tmp/firebase-credentials.json
+          echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-credentials.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-credentials.json
           npx firebase-tools deploy --project veritas-inmueble-2 --non-interactive --force

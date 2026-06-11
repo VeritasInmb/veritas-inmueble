@@ -1,18 +1,38 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Inmobiliaria } from '../types';
 import { AgencyCard } from '../components/agency/AgencyCard';
-import { MagnifyingGlassIcon } from '../components/Icons';
+import { MagnifyingGlassIcon, SpinnerIcon } from '../components/Icons';
+import { firebase } from '../services/firebase';
 
 interface DirectoryProps {
-    agencies: Inmobiliaria[];
     onNavigate: (view: 'profile', agency: Inmobiliaria) => void;
     onToggleCompare: (agency: Inmobiliaria) => void;
     comparisonList: Inmobiliaria[];
 }
 
-export const Directory: React.FC<DirectoryProps> = ({ agencies, onNavigate, onToggleCompare, comparisonList }) => {
+export const Directory: React.FC<DirectoryProps> = ({ onNavigate, onToggleCompare, comparisonList }) => {
     const [directorySearchTerm, setDirectorySearchTerm] = useState('');
     const [directoryFilters, setDirectoryFilters] = useState({ state: 'all', sortBy: 'score', order: 'desc' });
+    
+    // Local State for Agencies
+    const [agencies, setAgencies] = useState<Inmobiliaria[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch Agencies on Mount
+    useEffect(() => {
+        const fetchAgencies = async () => {
+            try {
+                // In the future, this should be paginated if the database grows over 1,000 items
+                const snapshot = await firebase.firestore().collection('inmobiliarias').get();
+                setAgencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Inmobiliaria)));
+            } catch (error) {
+                console.error("Error fetching directory agencies:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchAgencies();
+    }, []);
 
     const uniqueStates = useMemo(() => ['all', ...Array.from(new Set(agencies.map(a => a.estado).filter(Boolean))).sort()], [agencies]);
 
@@ -22,6 +42,10 @@ export const Directory: React.FC<DirectoryProps> = ({ agencies, onNavigate, onTo
         r.sort((a, b) => directoryFilters.sortBy === 'score' ? Number(b.score ?? 0) - Number(a.score ?? 0) : (a.estado || '').localeCompare(b.estado || '')); 
         return directoryFilters.order === 'asc' ? r : r.reverse(); 
     }, [agencies, directoryFilters, directorySearchTerm]);
+
+    if (isLoading) {
+        return <div className="min-h-screen pt-32 flex justify-center"><SpinnerIcon className="w-12 h-12 text-red-600 animate-spin"/></div>;
+    }
 
     return (
         <main className="container mx-auto px-4 pt-24 pb-8">

@@ -1,11 +1,31 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BlogPost } from '../types';
 import { SpinnerIcon } from '../components/Icons';
 import DOMPurify from 'dompurify';
+import { firebase } from '../services/firebase';
 
-export const BlogList: React.FC<{ posts: BlogPost[]; onNavigate: (view: 'blogPost', post: BlogPost) => void }> = ({ posts, onNavigate }) => {
-    if (posts.length === 0) {
+export const BlogList: React.FC<{ onNavigate: (view: 'blogPost', post: BlogPost) => void }> = ({ onNavigate }) => {
+    const [posts, setPosts] = useState<BlogPost[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchBlogs = async () => {
+            try {
+                const snapshot = await firebase.firestore().collection('blogs').get();
+                const blogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlogPost));
+                blogsData.sort((a, b) => Number(a.id) - Number(b.id));
+                setPosts(blogsData);
+            } catch (error) {
+                console.error("Error fetching blogs:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchBlogs();
+    }, []);
+
+    if (isLoading) {
         return (
             <div className="flex justify-center items-center h-screen pt-24">
                 <SpinnerIcon className="w-10 h-10 text-red-600 animate-spin" />

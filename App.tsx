@@ -100,14 +100,29 @@ const AgencyProfileRoute = ({ agencies, currentUser, onVoteReview, voteError, on
     );
 };
 
-const BlogPostRoute = ({ posts }: { posts: BlogPost[] }) => {
+const BlogPostRoute = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [post, setPost] = useState<BlogPost | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPost = async () => {
+            try {
+                const doc = await db.collection('blogs').doc(id).get();
+                if (doc.exists) {
+                    setPost({ id: doc.id, ...doc.data() } as BlogPost);
+                }
+            } catch (error) {
+                console.error("Error fetching blog post:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPost();
+    }, [id]);
     
-    // Find post from the props array. Ensure type safety for ID comparison.
-    // The id from params is a string. The post.id is now a string from interface.
-    const post = posts.find(p => String(p.id) === id);
-    
+    if (loading) return <div className="min-h-screen pt-24 flex justify-center"><SpinnerIcon className="w-10 h-10 text-red-600 animate-spin"/></div>;
     if (!post) return <div className="min-h-screen pt-24 text-center"><h2 className="text-2xl font-bold">Artículo no encontrado</h2></div>;
     return <BlogPostView post={post} onBack={() => navigate('/blog')} />;
 };
@@ -134,7 +149,7 @@ export default function App() {
         location.pathname.startsWith('/foro') ? 'forum' : 
         location.pathname.startsWith('/perfil') ? 'userProfile' : 'home';
 
-    const { agencies, users, reviewRequests, notifications, forumTopics, blogPosts, stats, isLoading, error } = useVeritasData(currentUser, viewForHook);
+    const { notifications, stats, isLoading, error } = useVeritasData(currentUser, viewForHook);
 
     // UI State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -178,7 +193,7 @@ export default function App() {
             const unsubscribeReviews = db.collection('resenas').where('usuarioId', '==', currentUser.id).orderBy('fecha', 'desc').onSnapshot(snap => {
                 const reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setUserActivity(prev => ({ ...prev, reviews }));
-                if (forumTopics.length > 0) setIsLoadingActivity(false);
+                setIsLoadingActivity(false); // Can be set false here or after both return
             }, (err) => console.log('User activity reviews error', err));
             
             const unsubscribeTopics = db.collection('forum_topics').where('userId', '==', currentUser.id).orderBy('createdAt', 'desc').onSnapshot(snap => {
@@ -189,7 +204,7 @@ export default function App() {
             
             return () => { unsubscribeReviews(); unsubscribeTopics(); };
         }
-    }, [location.pathname, currentUser, forumTopics.length]);
+    }, [location.pathname, currentUser]);
 
     // Handlers
     const handleLogout = async () => { await auth.signOut(); navigate('/'); };
@@ -278,9 +293,7 @@ export default function App() {
                     
                     <Route path="/" element={
                         <Home 
-                            agencies={agencies} 
                             stats={stats} 
-                            forumTopics={forumTopics}
                             onNavigate={(view, agency) => {
                                 if (view === 'profile' && agency) navigate(`/inmobiliaria/${agency.id}`);
                                 else if (view === 'directory') navigate('/directorio');
@@ -290,7 +303,6 @@ export default function App() {
                     
                     <Route path="/directorio" element={
                         <Directory 
-                            agencies={agencies} 
                             onNavigate={(view, agency) => navigate(`/inmobiliaria/${agency.id}`)}
                             onToggleCompare={handleToggleCompare}
                             comparisonList={comparisonList}
@@ -299,12 +311,11 @@ export default function App() {
                     
                     <Route path="/nosotros" element={<About onGoHome={() => navigate('/')} />} />
                     
-                    <Route path="/blog" element={<BlogList posts={blogPosts} onNavigate={(view, post) => navigate(`/blog/${post.id}`)} />} />
-                    <Route path="/blog/:id" element={<BlogPostRoute posts={blogPosts} />} />
+                    <Route path="/blog" element={<BlogList onNavigate={(view, post) => navigate(`/blog/${post.id}`)} />} />
+                    <Route path="/blog/:id" element={<BlogPostRoute />} />
                     
                     <Route path="/foro" element={
                         <Forum 
-                            forumTopics={forumTopics} 
                             currentUser={currentUser} 
                             createNotification={createNotification} 
                             selectedTopic={selectedTopic} 
@@ -317,7 +328,8 @@ export default function App() {
                     
                     <Route path="/inmobiliaria/:id" element={
                         <AgencyProfileRoute 
-                            agencies={agencies}
+                            agencies={[]} // App.tsx no longer passes agencies, AgencyProfileRoute fetches by id
+
                             currentUser={currentUser}
                             onVoteReview={handleVoteOnReview}
                             voteError={voteError}
@@ -346,7 +358,7 @@ export default function App() {
                     
                     <Route path="/admin" element={
                         <AdminRoute user={currentUser}>
-                            <AdminPanel agencies={agencies} users={users} reviewRequests={reviewRequests} blogPosts={blogPosts} />
+                            <AdminPanel />
                         </AdminRoute>
                     } />
 

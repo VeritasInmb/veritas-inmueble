@@ -166,8 +166,65 @@ const AgencyUploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onUplo
     return (<div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 z-[101]" onClick={handleClose}><div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-2xl" onClick={e => e.stopPropagation()}>{!report ? (<><h3 className="text-2xl font-black mb-4">Carga Masiva</h3><input type="file" accept=".csv" onChange={handleFileChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-red-50 file:text-red-700 hover:file:bg-red-100 mb-4" />{error && <p className="text-red-600 mb-4">{error}</p>}<div className="flex justify-end gap-2"><button onClick={handleClose} className="px-4 py-2 bg-gray-100 rounded-full">Cancelar</button><button onClick={handleProcessFile} disabled={!file || isProcessing} className="px-4 py-2 bg-red-600 text-white rounded-full disabled:opacity-50">{isProcessing ? 'Procesando...' : 'Cargar'}</button></div></>) : (<div><h4 className="text-xl font-bold mb-2">Resultados</h4><p className="text-green-600">{report.successCount} éxitos.</p>{report.errors.length > 0 && <ul className="text-red-500 text-sm mt-2 max-h-40 overflow-y-auto">{report.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}<button onClick={handleClose} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-full">Cerrar</button></div>)}</div></div>);
 };
 
-export const AdminPanel: React.FC<{ agencies: Inmobiliaria[]; users: Usuario[]; reviewRequests: SolicitudRevision[]; blogPosts: BlogPost[]; }> = ({ agencies, users, reviewRequests, blogPosts }) => {
-    const [adminView, setAdminView] = useState<'agencies' | 'users' | 'requests' | 'blog'>('agencies');
+export interface AdminPanelProps {}
+
+export const AdminPanel: React.FC<AdminPanelProps> = () => {
+    // Local State for Lazy Fetching
+    const [agencies, setAgencies] = useState<Inmobiliaria[]>([]);
+    const [users, setUsers] = useState<Usuario[]>([]);
+    const [reviewRequests, setReviewRequests] = useState<SolicitudRevision[]>([]);
+    const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+
+    // Fetch Admin Data
+    useEffect(() => {
+        setIsLoadingData(true);
+        let unsubscribeUsers = () => {}, unsubscribeRequests = () => {}, unsubscribeBlogs = () => {}, unsubscribeAgencies = () => {};
+
+        // Fetch Agencies
+        unsubscribeAgencies = db.collection('inmobiliarias').onSnapshot(snapshot => {
+            setAgencies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Inmobiliaria)));
+        }, (error) => console.error("Error fetching agencies:", error));
+
+        // Fetch Blogs
+        unsubscribeBlogs = db.collection('blogs').onSnapshot(snapshot => {
+            const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlogPost));
+            posts.sort((a, b) => Number(a.id) - Number(b.id));
+            setBlogPosts(posts);
+        }, (error) => console.error("Error fetching blogs:", error));
+
+        // Fetch Users & Requests
+        unsubscribeUsers = db.collection('usuarios').onSnapshot((s) => {
+            const uData = s.docs.map(d => ({ id: d.id, ...d.data() } as Usuario)); 
+            setUsers(uData);
+            unsubscribeRequests = db.collection('solicitudesRevision').orderBy('fecha', 'desc').onSnapshot(rs => {
+                setReviewRequests(rs.docs.map(d => { 
+                    const da = d.data() as Omit<SolicitudRevision, 'id'>; 
+                    return { 
+                        id: d.id, 
+                        ...da, 
+                        usuarioEmail: uData.find(u => u.id === da.usuarioId)?.email || 'N/A' 
+                    } as SolicitudRevision; 
+                }));
+                setIsLoadingData(false);
+            }, (error) => {
+                console.error("Error fetching review requests:", error);
+                setIsLoadingData(false);
+            });
+        }, (error) => {
+            console.error("Error fetching users:", error);
+            setIsLoadingData(false);
+        });
+
+        return () => {
+            unsubscribeUsers();
+            unsubscribeRequests();
+            unsubscribeBlogs();
+            unsubscribeAgencies();
+        };
+    }, []);
+
+    const [adminView, setAdminView] = useState<'users' | 'agencies' | 'requests' | 'blog' | 'forum'>('agencies');
     const [adminSearchTerm, setAdminSearchTerm] = useState('');
     
     // Agency Modal

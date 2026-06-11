@@ -331,7 +331,6 @@ const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void
 // --- Main Forum Component ---
 
 interface ForumProps {
-    forumTopics: ForumTopic[];
     currentUser: Usuario | null;
     createNotification: (toUserId: string, type: any, content: string, linkId: string) => Promise<void>;
     selectedTopic: ForumTopic | null;
@@ -341,14 +340,27 @@ interface ForumProps {
     onRequireAuth: () => void;
 }
 
-export const Forum: React.FC<ForumProps> = ({ forumTopics, currentUser, createNotification, selectedTopic, setSelectedTopic, activeCategory, setActiveCategory, onRequireAuth }) => {
+export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, selectedTopic, setSelectedTopic, activeCategory, setActiveCategory, onRequireAuth }) => {
+    const [forumTopics, setForumTopics] = useState<ForumTopic[]>([]);
     const [topicReplies, setTopicReplies] = useState<ForumReply[]>([]);
     const [isCreateTopicOpen, setIsCreateTopicOpen] = useState(false);
     const [forumSearch, setForumSearch] = useState('');
-    const [isLoading, setIsLoading] = useState(false); // Local loading state for topic switch if needed
-    
-    // State for Confirmation Modal
+    const [isLoading, setIsLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'topic' | 'reply', id: string } | null>(null);
+
+    // Fetch Forum Topics
+    useEffect(() => {
+        setIsLoading(true);
+        const unsubscribe = db.collection('forum_topics').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+            const realTopics = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ForumTopic));
+            setForumTopics(realTopics);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Snapshot error:", error);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
     const categories: ForumCategory[] = useMemo(() => [
         { id: 'cat_gral', name: 'General', iconName: 'MessageSquare' },

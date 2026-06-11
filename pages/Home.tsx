@@ -11,10 +11,8 @@ import { firebase } from '../services/firebase';
 import { EnergyFlow } from '../components/ui/EnergyFlow';
 
 interface HomeProps {
-    agencies: Inmobiliaria[];
     stats: { agencies: number; reviews: number; frauds: number; };
     onNavigate: (view: 'profile' | 'directory', agency?: Inmobiliaria) => void;
-    forumTopics?: ForumTopic[];
     onTopicClick?: (topic: ForumTopic) => void;
 }
 
@@ -74,11 +72,38 @@ const horrorStories = [
     }
 ];
 
-export const Home: React.FC<HomeProps> = ({ agencies, stats, onNavigate, forumTopics = [], onTopicClick }) => {
+export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
     
+    // Local State for Lazy Fetching
+    const [agencies, setAgencies] = useState<Inmobiliaria[]>([]);
+    const [forumTopics, setForumTopics] = useState<ForumTopic[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch local data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch top 20 agencies to avoid full DB download
+                const agenciesSnapshot = await firebase.firestore().collection('inmobiliarias').limit(20).get();
+                const agenciesData = agenciesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Inmobiliaria));
+                setAgencies(agenciesData);
+
+                // Fetch recent 3 forum topics
+                const forumSnapshot = await firebase.firestore().collection('forum_topics').orderBy('createdAt', 'desc').limit(3).get();
+                const forumData = forumSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ForumTopic));
+                setForumTopics(forumData);
+            } catch (error) {
+                console.error("Error fetching home data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     // Carousel State
     const [activeTopicIndex, setActiveTopicIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);

@@ -1,17 +1,11 @@
-"use client";
+import type { Metadata } from 'next';
+import ClientPage from './ClientPage';
 
-import React, { useEffect } from 'react';
-import { Login } from '../../components/Login';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
+export const metadata: Metadata = {
+  title: 'Iniciar Sesión | Veritas Inmueble',
+  description: 'Inicia sesión en tu cuenta de Veritas Inmueble para dejar reseñas y participar en el foro.',
+};
 
-export default function LoginPage() {
-    const router = useRouter();
-    const { currentUser } = useAuth();
-
-    useEffect(() => {
-        if (currentUser) router.replace('/');
-    }, [currentUser, router]);
-
-    return <Login onSkip={() => router.push('/')} />;
+export default function Page() {
+  return <ClientPage />;
 }

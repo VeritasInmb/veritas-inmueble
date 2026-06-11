@@ -11,9 +11,10 @@
   },
   "dependencies": {
     "@google/genai": "latest",
+    "@opentelemetry/api": "^1.9.1",
     "dompurify": "^3.3.1",
     "firebase": "^10.8.0",
-    "firebase-admin": "^14.0.0",
+    "firebase-admin": "^13.10.0",
     "lucide-react": "^0.330.0",
     "next": "^14.2.35",
     "react": "^18.2.0",

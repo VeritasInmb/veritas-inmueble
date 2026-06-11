@@ -1,10 +1,11 @@
-"use client";
+import type { Metadata } from 'next';
+import ClientPage from './ClientPage';
 
-import React from 'react';
-import { BlogList } from '../../views/Blog';
-import { useRouter } from 'next/navigation';
+export const metadata: Metadata = {
+  title: 'Blog de Bienes Raíces | Veritas Inmueble',
+  description: 'Consejos, guías y noticias sobre el mercado inmobiliario en México para proteger tu inversión.',
+};
 
-export default function BlogPage() {
-    const router = useRouter();
-    return <BlogList onNavigate={(view, post) => router.push(`/blog/${post.id}`)} />;
+export default function Page() {
+  return <ClientPage />;
 }

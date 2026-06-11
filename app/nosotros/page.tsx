@@ -1,10 +1,11 @@
-"use client";
+import type { Metadata } from 'next';
+import ClientPage from './ClientPage';
 
-import React from 'react';
-import { About } from '../../views/About';
-import { useRouter } from 'next/navigation';
+export const metadata: Metadata = {
+  title: 'Nosotros | Veritas Inmueble',
+  description: 'Conoce más sobre Veritas Inmueble, nuestra misión y por qué promovemos la transparencia en bienes raíces.',
+};
 
-export default function AboutPage() {
-    const router = useRouter();
-    return <About onGoHome={() => router.push('/')} />;
+export default function Page() {
+  return <ClientPage />;
 }

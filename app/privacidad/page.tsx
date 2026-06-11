@@ -1,8 +1,11 @@
-"use client";
+import type { Metadata } from 'next';
+import ClientPage from './ClientPage';
 
-import React from 'react';
-import { Privacy } from '../../views/Privacy';
+export const metadata: Metadata = {
+  title: 'Aviso de Privacidad | Veritas Inmueble',
+  description: 'Lee nuestro aviso de privacidad y cómo protegemos tus datos en Veritas Inmueble.',
+};
 
-export default function PrivacyPage() {
-    return <Privacy />;
+export default function Page() {
+  return <ClientPage />;
 }

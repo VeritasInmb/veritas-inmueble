@@ -16,7 +16,6 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <script src="https://cdn.tailwindcss.com" async></script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />

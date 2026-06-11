@@ -2,22 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../services/firebase';
 import { SpinnerIcon, WarningIcon, UserIcon, InboxIcon, SendIcon } from './Icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 interface LoginProps {
     onSkip?: () => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onSkip }) => {
-    const location = useLocation();
-    const navigate = useNavigate();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [isRegistering, setIsRegistering] = useState(false);
     
     useEffect(() => {
-        if (location.state && (location.state as any).isRegistering) {
+        if (searchParams?.get('mode') === 'register') {
             setIsRegistering(true);
         }
-    }, [location]);
+    }, [searchParams]);
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -96,7 +97,7 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
             } else {
                 // --- LOGIN ---
                 await auth.signInWithEmailAndPassword(email, password);
-                navigate('/');
+                router.push('/');
             }
         } catch (error: any) {
             console.error("Auth Error:", error);
@@ -129,13 +130,13 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
         if (auth.currentUser) {
             await auth.currentUser.reload();
             if (auth.currentUser.emailVerified) {
-                navigate('/');
+                router.push('/');
             } else {
                 // Recargar solo si es estrictamente necesario para actualizar estado
                 window.location.reload(); 
             }
         } else {
-            navigate('/');
+            router.push('/');
         }
     };
 

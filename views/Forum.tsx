@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ForumTopic, ForumReply, ForumCategory, Usuario } from '../types';
 import { db, firebase, auth } from '../services/firebase';
 import { MessageSquareIcon, HomeIcon, BuildingOfficeIcon, ScaleIcon, BanknotesIcon, UserIcon, ChartBarIcon, LinkIcon, DocumentIcon, ExternalLinkIcon, TrashIcon, HeartIcon, EyeIcon, CloseIcon, SpinnerIcon, SendIcon, MagnifyingGlassIcon, PlusIcon } from '../components/Icons';
@@ -39,7 +40,7 @@ const ForumSidebar: React.FC<{ activeCategory: string; onSelectCategory: (id: st
             </nav>
             {currentUser && (
                 <div className="mt-auto pt-6 border-t border-slate-100">
-                    <Link to="/perfil" className="flex items-center gap-3 px-2 hover:bg-slate-50 p-2 rounded-xl transition-colors cursor-pointer group">
+                    <Link href="/perfil" className="flex items-center gap-3 px-2 hover:bg-slate-50 p-2 rounded-xl transition-colors cursor-pointer group">
                         <UserAvatar 
                             name={currentUser.nombre} 
                             avatarUrl={currentUser.avatarUrl} 
@@ -59,7 +60,7 @@ const ForumSidebar: React.FC<{ activeCategory: string; onSelectCategory: (id: st
 };
 
 const ForumRightPanel: React.FC = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
     
     return (
         <aside className="w-80 shrink-0 hidden lg:flex flex-col h-full border-l border-slate-100 bg-slate-50 py-6 px-6 gap-6 overflow-y-auto">
@@ -105,7 +106,7 @@ const ForumRightPanel: React.FC = () => {
                 <div className="absolute top-0 right-0 w-20 h-20 bg-red-600 rounded-full filter blur-2xl opacity-30 -translate-y-1/2 translate-x-1/2"></div>
                 <h4 className="text-white font-bold relative z-10 mb-2">Aprende con Expertos</h4>
                 <p className="text-slate-400 text-sm relative z-10 mb-4">Lee nuestra guía sobre cómo detectar fraudes en preventas.</p>
-                <button onClick={() => navigate('/blog')} className="w-full py-2 bg-red-600 rounded-xl text-white text-sm font-bold hover:bg-red-700 transition relative z-10">Ir al Blog</button>
+                <button onClick={() => router.push('/blog')} className="w-full py-2 bg-red-600 rounded-xl text-white text-sm font-bold hover:bg-red-700 transition relative z-10">Ir al Blog</button>
             </div>
         </aside>
     );
@@ -213,6 +214,7 @@ const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
 };
 
 const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void; replies: ForumReply[]; onReplySubmit: (content: string) => Promise<void>; currentUser: Usuario | null; onDeleteTopic: (id: string) => void; onDeleteReply: (id: string) => void; onLikeTopic: (id: string) => void; onRequireAuth: () => void; }> = ({ topic, onClose, replies, onReplySubmit, currentUser, onDeleteTopic, onDeleteReply, onLikeTopic, onRequireAuth }) => {
+    const router = useRouter();
     const [newReply, setNewReply] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const repliesEndRef = useRef<HTMLDivElement>(null);
@@ -291,7 +293,7 @@ const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void
                                     </div>
                                     <div className="bg-slate-50 rounded-2xl rounded-tl-none p-4 flex-1">
                                         <div className="flex justify-between items-baseline mb-1">
-                                            <span className="font-bold text-slate-900">{reply.authorName}</span>
+                                            <button onClick={() => router.push(`/perfil/${reply.userId}`)} className="hover:text-red-600 font-bold text-slate-900">{reply.authorName}</button>
                                             <span className="text-xs text-slate-400">{formatDate(reply.createdAt)}</span>
                                         </div>
                                         <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{reply.content}</p>

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 
 interface FooterProps {
     showAdminLink: boolean;
@@ -14,9 +15,9 @@ export const Footer: React.FC<FooterProps> = ({ showAdminLink, className }) => (
                  <span className="text-2xl font-black text-white">Veritas<span className="text-red-500">.</span></span>
             </div>
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 text-sm font-medium">
-                 <Link to="/terminos" className="hover:text-white transition-colors">Términos</Link>
-                 <Link to="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
-                 {showAdminLink && <Link to="/admin" className="hover:text-white transition-colors">Admin</Link>}
+                 <Link href="/terminos" className="hover:text-white transition-colors">Términos</Link>
+                 <Link href="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
+                 {showAdminLink && <Link href="/admin" className="hover:text-white transition-colors">Admin</Link>}
             </div>
             <p className="text-sm font-medium opacity-50">&copy; 2025 Veritas Inmueble</p>
         </div>

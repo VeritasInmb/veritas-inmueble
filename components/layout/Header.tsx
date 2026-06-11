@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+
 import { LogoutIcon, BellIcon, MenuIcon, CloseIcon, WarningIcon, SpinnerIcon } from '../Icons';
 import { UserAvatar } from '../ui/UserAvatar';
 import { auth } from '../../services/firebase';
@@ -21,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [cooldown, setCooldown] = useState(0); // Cooldown state
-    const location = useLocation();
+    const pathname = usePathname();
     
     // Timer para el cooldown
     useEffect(() => {
@@ -34,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
     // Helper to close menu on nav
     const closeMenu = () => setIsMenuOpen(false);
 
-    const isActive = (path: string) => location.pathname === path ? 'bg-slate-900 text-white' : 'hover:bg-gray-100 font-semibold text-slate-600';
+    const isActive = (path: string) => pathname === path ? 'bg-slate-900 text-white' : 'hover:bg-gray-100 font-semibold text-slate-600';
 
     const handleResendVerification = async () => {
         if (!auth.currentUser) return;
@@ -63,16 +65,16 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
         <>
             <header className="fixed w-full top-4 z-50 px-4">
                 <nav className="container mx-auto bg-white/90 backdrop-blur-xl rounded-full shadow-xl border border-gray-100 py-3 px-6 flex justify-between items-center">
-                    <Link to="/" className="text-xl font-black tracking-tighter text-slate-900 flex items-center gap-1">
+                    <Link href="/" className="text-xl font-black tracking-tighter text-slate-900 flex items-center gap-1">
                         Veritas<span className="text-red-600">Inmueble</span>
                     </Link>
                     
                     <div className="hidden lg:flex items-center gap-1">
-                        <Link to="/" className={`${isActive('/')} px-4 py-2 rounded-full transition-all text-sm`}>Inicio</Link>
-                        <Link to="/directorio" className={`${isActive('/directorio')} px-4 py-2 rounded-full transition-all text-sm`}>Directorio</Link>
-                        <Link to="/foro" className={`${isActive('/foro')} px-4 py-2 rounded-full transition-all text-sm`}>Foro</Link>
-                        <Link to="/nosotros" className={`${isActive('/nosotros')} px-4 py-2 rounded-full transition-all text-sm`}>Nosotros</Link>
-                        <Link to="/blog" className={`${isActive('/blog')} px-4 py-2 rounded-full transition-all text-sm`}>Blog</Link>
+                        <Link href="/" className={`${isActive('/')} px-4 py-2 rounded-full transition-all text-sm`}>Inicio</Link>
+                        <Link href="/directorio" className={`${isActive('/directorio')} px-4 py-2 rounded-full transition-all text-sm`}>Directorio</Link>
+                        <Link href="/foro" className={`${isActive('/foro')} px-4 py-2 rounded-full transition-all text-sm`}>Foro</Link>
+                        <Link href="/nosotros" className={`${isActive('/nosotros')} px-4 py-2 rounded-full transition-all text-sm`}>Nosotros</Link>
+                        <Link href="/blog" className={`${isActive('/blog')} px-4 py-2 rounded-full transition-all text-sm`}>Blog</Link>
                         
                         <button onClick={onReviewClick} className="bg-red-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-all shadow-md ml-2">
                             Solicitar Revisión
@@ -80,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
 
                         {isLoggedIn ? (
                             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-100">
-                                <Link to="/perfil" className={`relative flex items-center gap-2 px-3 py-2 rounded-full transition-all hover:bg-gray-100 ${location.pathname === '/perfil' ? 'bg-gray-100' : ''}`}>
+                                <Link href="/perfil" className={`relative flex items-center gap-2 px-3 py-2 rounded-full transition-all hover:bg-gray-100 ${pathname === '/perfil' ? 'bg-gray-100' : ''}`}>
                                     <div className="relative">
                                         <UserAvatar 
                                             name={userName || 'Usuario'} 
@@ -101,14 +103,12 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-100">
-                                <Link 
-                                    to="/login" 
-                                    state={{ isRegistering: true }}
+                                <Link href="/login?mode=register" 
                                     className="text-slate-500 font-bold text-sm px-4 py-2 hover:bg-slate-50 hover:text-red-600 transition-colors rounded-full"
                                 >
                                     Registrarse
                                 </Link>
-                                <Link to="/login" className="bg-red-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-all shadow-md flex items-center">
+                                <Link href="/login" className="bg-red-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-all shadow-md flex items-center">
                                     Iniciar Sesión
                                 </Link>
                             </div>
@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
 
                     <div className="lg:hidden flex items-center gap-3">
                         {isLoggedIn && notificationsCount > 0 && (
-                            <Link to="/perfil" className="relative bg-gray-100 p-2 rounded-full text-gray-600 transition-transform duration-200 active:scale-95">
+                            <Link href="/perfil" className="relative bg-gray-100 p-2 rounded-full text-gray-600 transition-transform duration-200 active:scale-95">
                                 <BellIcon className="w-5 h-5" />
                                 <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full">{notificationsCount}</span>
                             </Link>
@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
                     <div className="lg:hidden fixed top-20 left-4 right-4 bg-white rounded-3xl border border-gray-100 shadow-2xl z-50 p-2 overflow-hidden">
                         <div className="flex flex-col gap-1">
                             {isLoggedIn && (
-                                <Link to="/perfil" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all flex items-center gap-3 bg-slate-50">
+                                <Link href="/perfil" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all flex items-center gap-3 bg-slate-50">
                                     <UserAvatar 
                                         name={userName || 'Usuario'} 
                                         avatarUrl={userAvatar} 
@@ -143,11 +143,11 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
                                     <span>Mi Perfil {notificationsCount > 0 && <span className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{notificationsCount} new</span>}</span>
                                 </Link>
                             )}
-                            <Link to="/" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Inicio</Link>
-                            <Link to="/directorio" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Directorio</Link>
-                            <Link to="/foro" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Foro</Link>
-                            <Link to="/nosotros" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Nosotros</Link>
-                            <Link to="/blog" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Blog</Link>
+                            <Link href="/" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Inicio</Link>
+                            <Link href="/directorio" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Directorio</Link>
+                            <Link href="/foro" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Foro</Link>
+                            <Link href="/nosotros" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Nosotros</Link>
+                            <Link href="/blog" onClick={closeMenu} className="w-full text-left text-gray-700 hover:bg-gray-50 px-4 py-3 rounded-2xl font-semibold transition-all">Blog</Link>
                             
                             <button onClick={() => { closeMenu(); onReviewClick(); }} className="w-full text-center font-semibold px-4 py-3 rounded-2xl bg-red-600 text-white hover:bg-red-700 mt-2 transition-all shadow-md shadow-red-600/20">
                                 Solicitar Revisión
@@ -162,12 +162,10 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
                                 </>
                             ) : (
                                 <>
-                                    <Link to="/login" onClick={closeMenu} className="w-full text-center font-semibold px-4 py-3 rounded-2xl bg-red-600 text-white hover:bg-red-700 mt-2 transition-all shadow-md block">
+                                    <Link href="/login" onClick={closeMenu} className="w-full text-center font-semibold px-4 py-3 rounded-2xl bg-red-600 text-white hover:bg-red-700 mt-2 transition-all shadow-md block">
                                         Iniciar Sesión
                                     </Link>
-                                    <Link 
-                                        to="/login" 
-                                        state={{ isRegistering: true }}
+                                    <Link href="/login?mode=register" 
                                         onClick={closeMenu} 
                                         className="w-full text-center font-semibold px-4 py-3 rounded-2xl text-slate-500 hover:bg-slate-50 hover:text-red-600 mt-1 transition-all block"
                                     >

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Inmobiliaria, ForumTopic } from '../types';
 import { getScoreInfo } from '../constants';
 import { AgencyCard } from '../components/agency/AgencyCard';
@@ -73,7 +73,7 @@ const horrorStories = [
 ];
 
 export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchDropdownVisible, setIsSearchDropdownVisible] = useState(false);
     
@@ -154,7 +154,7 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
         if (onTopicClick) {
             onTopicClick(currentTopic as ForumTopic);
         } else {
-            navigate('/foro', { state: { topicId: currentTopic.id } });
+            router.push('/foro?topicId=' + currentTopic.id);
         }
     };
 
@@ -209,7 +209,7 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
                                 className="w-full px-4 py-3 bg-transparent focus:outline-none font-bold text-slate-700 text-lg placeholder:font-medium placeholder:text-slate-300" 
                             />
                             <button 
-                                onClick={() => { if(searchTerm) navigate('/directorio'); }}
+                                onClick={() => { if(searchTerm) router.push('/directorio'); }}
                                 className="bg-red-600 text-white px-8 py-3 rounded-full hover:bg-red-700 transition-all flex items-center gap-2 font-bold shadow-md text-lg"
                             >
                                 <MagnifyingGlassIcon className="w-5 h-5"/> Analizar

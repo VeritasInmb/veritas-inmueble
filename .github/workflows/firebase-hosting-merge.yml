@@ -16,7 +16,9 @@ jobs:
       - name: Deploy to Firebase
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VERITAS_INMUEBLE_2 }}
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
         run: |
           echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-credentials.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-credentials.json
+          npx firebase-tools experiments:enable webframeworks
           npx firebase-tools deploy --project veritas-inmueble-2 --non-interactive --force

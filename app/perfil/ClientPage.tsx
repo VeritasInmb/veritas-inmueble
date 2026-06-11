@@ -34,17 +34,25 @@ function ProfileContent() {
     useEffect(() => {
         if (currentUser) {
             setIsLoadingActivity(true);
-            const unsubscribeReviews = db.collection('resenas').where('usuarioId', '==', currentUser.id).orderBy('fecha', 'desc').onSnapshot(snap => {
-                const reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const unsubscribeReviews = db.collection('resenas').where('usuarioId', '==', currentUser.id).onSnapshot(snap => {
+                let reviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                reviews.sort((a: any, b: any) => (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0));
                 setUserActivity(prev => ({ ...prev, reviews }));
                 setIsLoadingActivity(false);
-            }, (err) => console.log('User activity reviews error', err));
+            }, (err) => {
+                console.log('User activity reviews error', err);
+                setIsLoadingActivity(false);
+            });
             
-            const unsubscribeTopics = db.collection('forum_topics').where('userId', '==', currentUser.id).orderBy('createdAt', 'desc').onSnapshot(snap => {
-                const topics = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const unsubscribeTopics = db.collection('forum_topics').where('userId', '==', currentUser.id).onSnapshot(snap => {
+                let topics = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                topics.sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 setUserActivity(prev => ({ ...prev, topics }));
                 setIsLoadingActivity(false);
-            }, (err) => console.log('User activity topics error', err));
+            }, (err) => {
+                console.log('User activity topics error', err);
+                setIsLoadingActivity(false);
+            });
             
             return () => { unsubscribeReviews(); unsubscribeTopics(); };
         }

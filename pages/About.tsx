@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { MagnifyingGlassIcon, ShieldCheckIcon, UserIcon } from '../components/Icons';
-import { ScamsChart } from '../components/SharedComponents';
+import { FraudContextSection } from '../components/SharedComponents';
 
 interface AboutProps {
     onGoHome: () => void;
@@ -33,7 +33,7 @@ export const About: React.FC<AboutProps> = ({ onGoHome }) => {
                     </div>
                 </div>
             </section>
-            <section className="container mx-auto px-6 mb-24"><ScamsChart /></section>
+            <section className="container mx-auto px-6 mb-24"><FraudContextSection /></section>
             <section className="bg-slate-900 py-24 rounded-[3rem] container mx-auto px-6 text-center relative overflow-hidden shadow-2xl shadow-slate-900/30 mx-4 md:mx-auto">
                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-800 to-slate-900"></div>
                 <div className="relative z-10 max-w-3xl mx-auto">

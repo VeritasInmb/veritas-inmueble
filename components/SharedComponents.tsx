@@ -51,22 +51,29 @@ export const StarRatingInput: React.FC<{ rating: number, setRating: (r: number) 
     );
 };
 
-export const ScamsChart = () => {
-    const data = [ { year: '2020', 'Estafas Reportadas': 4580 }, { year: '2021', 'Estafas Reportadas': 5120 }, { year: '2022', 'Estafas Reportadas': 6350 }, { year: '2023', 'Estafas Reportadas': 7890 }, { year: '2024', 'Estafas Reportadas': 9140 }, ];
+export const FraudContextSection = () => {
     return (
-        <div className="bg-white rounded-3xl shadow-xl p-8 mb-12 border border-slate-100">
-            <h3 className="text-3xl font-black text-slate-900 mb-2">La Escalada del Fraude</h3>
-            <p className="text-slate-500 mb-6 font-medium">Casos reportados oficialmente. La realidad podría ser el doble.</p>
-            <div style={{ width: '100%', height: 400 }}>
-                <ResponsiveContainer>
-                    <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis dataKey="year" tick={{fill: '#64748b', fontWeight: 'bold'}} />
-                        <YAxis tick={{fill: '#64748b', fontWeight: 'bold'}} />
-                        <Tooltip contentStyle={{ background: 'rgba(255, 255, 255, 0.9)', border: 'none', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} labelStyle={{fontWeight: 'bold', color: '#0f172a'}} />
-                        <Bar dataKey="Estafas Reportadas" fill="#dc2626" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
+        <div className="mb-12">
+            <div className="text-center mb-10">
+                <h3 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">La Realidad Inmobiliaria Hoy</h3>
+                <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">El sector ha evolucionado, y los riesgos también. Conocer el panorama actual con datos reales es el primer paso para proteger tu inversión de manera inteligente.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center text-center hover:-translate-y-2 transition-transform duration-300">
+                    <span className="text-6xl font-black text-slate-900 mb-4 tracking-tighter">40<span className="text-4xl text-slate-400">%</span></span>
+                    <h4 className="text-xl font-bold text-slate-900 mb-3">La Amenaza Digital</h4>
+                    <p className="text-slate-600 font-medium leading-relaxed">Cerca del 40% de las estafas digitales ya utilizan tecnología avanzada (IA) para falsificar identidades, documentos y propiedades.</p>
+                </div>
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center text-center hover:-translate-y-2 transition-transform duration-300">
+                    <span className="text-6xl font-black text-slate-900 mb-4 tracking-tighter"><span className="text-4xl text-slate-400">&gt;</span>90<span className="text-4xl text-slate-400">%</span></span>
+                    <h4 className="text-xl font-bold text-slate-900 mb-3">El Costo de la Informalidad</h4>
+                    <p className="text-slate-600 font-medium leading-relaxed">Se estima que más del 90% de quienes ofrecen inmuebles operan sin certificación. Realizar tratos sin verificar eleva el riesgo exponencialmente.</p>
+                </div>
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center text-center hover:-translate-y-2 transition-transform duration-300">
+                    <span className="text-6xl font-black text-red-600 mb-4 tracking-tighter">97.2<span className="text-4xl text-red-400">%</span></span>
+                    <h4 className="text-xl font-bold text-slate-900 mb-3">Impunidad Estadística</h4>
+                    <p className="text-slate-600 font-medium leading-relaxed">Una vez entregado un anticipo fraudulento, la prevención es la única garantía real. El 97.2% de los fraudes en México quedan impunes.</p>
+                </div>
             </div>
         </div>
     );

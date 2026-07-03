@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Inmobiliaria, Resena } from '../../../types';
 import { db } from '../../../services/firebase';
-import { BuildingOfficeIcon, DocumentIcon, ShieldCheckIcon, WarningIcon, StarIcon, MessageSquareIcon } from '../../../components/Icons';
+import { BuildingOfficeIcon, DocumentIcon, ShieldCheckIcon, WarningIcon, StarIcon, MessageSquareIcon, TrashIcon } from '../../../components/Icons';
 
 interface AgencyFullEditorProps {
     agency: Inmobiliaria | null;
@@ -67,6 +67,26 @@ export const AgencyFullEditor: React.FC<AgencyFullEditorProps> = ({ agency, onSa
             const nuevas = [...(fd.evidenciasSociales || [])];
             nuevas.splice(index, 1);
             setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
+        }
+    };
+
+    const handleDeleteNativeReply = async (reviewId: string, replyId: string) => {
+        if(window.confirm('¿Eliminar respuesta nativa? Esta acción no se puede deshacer.')) {
+            const review = nativeReviews.find(r => r.id === reviewId);
+            if (review && review.replies) {
+                const newReplies = review.replies.filter(r => r.id !== replyId);
+                await db.collection('resenas').doc(reviewId).update({ replies: newReplies });
+            }
+        }
+    };
+
+    const handleDeleteSocialEvidenceReply = (evIndex: number, replyIndex: number) => {
+        if(window.confirm('¿Eliminar respuesta de evidencia social? Debes Guardar los cambios para aplicar.')) {
+            const nuevas = [...(fd.evidenciasSociales || [])];
+            if (nuevas[evIndex].replies) {
+                nuevas[evIndex].replies!.splice(replyIndex, 1);
+                setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
+            }
         }
     };
 
@@ -246,19 +266,100 @@ export const AgencyFullEditor: React.FC<AgencyFullEditorProps> = ({ agency, onSa
                                                 <div key={review.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <div className="font-bold text-slate-900 text-sm">{review.usuarioNombre} <span className="text-xs text-slate-500 font-normal ml-2">Score: {review.calificacion}★</span></div>
+                                                            <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                                                {review.usuarioNombre} 
+                                                                <select 
+                                                                    value={typeof review.calificacion === 'number' ? review.calificacion : 1}
+                                                                    onChange={(e) => {
+                                                                        const nuevas = [...nativeReviews];
+                                                                        const idx = nuevas.findIndex(r => r.id === review.id);
+                                                                        if (idx !== -1) {
+                                                                            nuevas[idx].calificacion = Number(e.target.value);
+                                                                            setNativeReviews(nuevas);
+                                                                            if (review.id) db.collection('resenas').doc(review.id).update({ calificacion: Number(e.target.value) });
+                                                                        }
+                                                                    }}
+                                                                    className="text-[10px] font-normal bg-slate-100 border border-slate-200 rounded px-1 outline-none focus:border-blue-400 text-slate-600 cursor-pointer"
+                                                                >
+                                                                    <option value={0}>Neutro (No cuenta)</option>
+                                                                    <option value={1}>1 Estrella</option>
+                                                                    <option value={2}>2 Estrellas</option>
+                                                                    <option value={3}>3 Estrellas</option>
+                                                                    <option value={4}>4 Estrellas</option>
+                                                                    <option value={5}>5 Estrellas</option>
+                                                                </select>
+                                                            </div>
                                                             <div className="text-xs text-slate-400">{review.fecha?.toDate?.().toLocaleDateString() || 'Fecha desconocida'}</div>
                                                         </div>
-                                                        <button type="button" onClick={() => handleDeleteNativeReview(review.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition"><WarningIcon className="w-4 h-4" /></button>
+                                                        <button type="button" onClick={() => handleDeleteNativeReview(review.id!)} className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition text-xs font-bold flex items-center gap-1">Eliminar <TrashIcon className="w-4 h-4" /></button>
                                                     </div>
-                                                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{review.comentario}</p>
+                                                    <textarea 
+                                                        value={review.comentario} 
+                                                        onChange={(e) => {
+                                                            const nuevas = [...nativeReviews];
+                                                            const idx = nuevas.findIndex(r => r.id === review.id);
+                                                            if (idx !== -1) {
+                                                                nuevas[idx].comentario = e.target.value;
+                                                                setNativeReviews(nuevas);
+                                                            }
+                                                        }}
+                                                        onBlur={() => {
+                                                            if (review.id) db.collection('resenas').doc(review.id).update({ comentario: review.comentario });
+                                                        }}
+                                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:border-red-500 outline-none min-h-[60px] resize-y"
+                                                    />
                                                     {review.replies && review.replies.length > 0 && (
                                                         <div className="ml-4 pl-3 border-l-2 border-slate-100 space-y-2 mt-2">
                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Respuestas ({review.replies.length})</span>
                                                             {review.replies.map(reply => (
-                                                                <div key={reply.id} className="bg-slate-50 p-2.5 rounded-lg">
-                                                                    <div className="text-[10px] font-bold text-slate-800 mb-1">{reply.usuarioNombre}</div>
-                                                                    <p className="text-xs text-slate-600">{reply.comentario}</p>
+                                                                <div key={reply.id} className="bg-slate-50 p-2.5 rounded-lg relative group">
+                                                                    <div className="flex justify-between items-start">
+                                                                        <div className="text-[10px] font-bold text-slate-800 mb-1 flex items-center gap-2">
+                                                                            {reply.usuarioNombre}
+                                                                            <select 
+                                                                                value={reply.calificacion || 0} 
+                                                                                onChange={(e) => {
+                                                                                    const nuevas = [...nativeReviews];
+                                                                                    const rIdx = nuevas.findIndex(r => r.id === review.id);
+                                                                                    if (rIdx !== -1 && nuevas[rIdx].replies) {
+                                                                                        const repIdx = nuevas[rIdx].replies!.findIndex(rp => rp.id === reply.id);
+                                                                                        if (repIdx !== -1) {
+                                                                                            nuevas[rIdx].replies![repIdx].calificacion = Number(e.target.value);
+                                                                                            setNativeReviews(nuevas);
+                                                                                            if (review.id) db.collection('resenas').doc(review.id).update({ replies: nuevas[rIdx].replies });
+                                                                                        }
+                                                                                    }
+                                                                                }}
+                                                                                className="text-[9px] font-normal bg-slate-200/50 border border-slate-200 rounded px-1 outline-none focus:border-red-400 text-slate-600 cursor-pointer"
+                                                                            >
+                                                                                <option value={0}>Neutro</option>
+                                                                                <option value={1}>1 Estrella</option>
+                                                                                <option value={2}>2 Estrellas</option>
+                                                                                <option value={3}>3 Estrellas</option>
+                                                                                <option value={4}>4 Estrellas</option>
+                                                                                <option value={5}>5 Estrellas</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <button type="button" onClick={() => handleDeleteNativeReply(review.id!, reply.id!)} className="text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold flex items-center gap-1"><TrashIcon className="w-3 h-3" /></button>
+                                                                    </div>
+                                                                    <textarea 
+                                                                        value={reply.comentario} 
+                                                                        onChange={(e) => {
+                                                                            const nuevas = [...nativeReviews];
+                                                                            const rIdx = nuevas.findIndex(r => r.id === review.id);
+                                                                            if (rIdx !== -1 && nuevas[rIdx].replies) {
+                                                                                const repIdx = nuevas[rIdx].replies!.findIndex(rp => rp.id === reply.id);
+                                                                                if (repIdx !== -1) {
+                                                                                    nuevas[rIdx].replies![repIdx].comentario = e.target.value;
+                                                                                    setNativeReviews(nuevas);
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        onBlur={() => {
+                                                                            if (review.id) db.collection('resenas').doc(review.id).update({ replies: nativeReviews.find(r => r.id === review.id)?.replies });
+                                                                        }}
+                                                                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 focus:border-red-500 outline-none min-h-[50px] resize-y"
+                                                                    />
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -283,17 +384,38 @@ export const AgencyFullEditor: React.FC<AgencyFullEditorProps> = ({ agency, onSa
                                                     </div>
                                                     <div className="flex justify-between items-start pt-2">
                                                         <div>
-                                                            <div className="font-bold text-slate-900 text-sm">Usuario Anonimizado</div>
+                                                            <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                                                Usuario Anonimizado
+                                                                <select 
+                                                                    value={typeof ev.resenaGenerada?.calificacion === 'number' ? ev.resenaGenerada.calificacion : 1} 
+                                                                    onChange={(e) => {
+                                                                        const nuevas = [...fd.evidenciasSociales!];
+                                                                        if (!nuevas[index].resenaGenerada) nuevas[index].resenaGenerada = {};
+                                                                        nuevas[index].resenaGenerada.calificacion = Number(e.target.value);
+                                                                        setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
+                                                                    }}
+                                                                    className="text-xs font-normal bg-slate-100 border border-slate-200 rounded px-1 py-0.5 outline-none focus:border-pink-400 text-slate-600 cursor-pointer"
+                                                                >
+                                                                    <option value={0}>Neutro (No cuenta)</option>
+                                                                    <option value={1}>1 Estrella</option>
+                                                                    <option value={2}>2 Estrellas</option>
+                                                                    <option value={3}>3 Estrellas</option>
+                                                                    <option value={4}>4 Estrellas</option>
+                                                                    <option value={5}>5 Estrellas</option>
+                                                                </select>
+                                                            </div>
                                                             <a href={ev.fileUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold text-blue-500 hover:underline">Ver Fuente Original</a>
                                                         </div>
-                                                        <button type="button" onClick={() => handleDeleteSocialEvidence(index)} className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition"><WarningIcon className="w-4 h-4" /></button>
+                                                        <button type="button" onClick={() => handleDeleteSocialEvidence(index)} className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition text-xs font-bold flex items-center gap-1">Eliminar <TrashIcon className="w-4 h-4" /></button>
                                                     </div>
                                                     <div className="w-full">
                                                         <textarea 
-                                                            value={ev.resenaGenerada?.comentario || ''} 
+                                                            value={ev.resenaGenerada?.comentario || (ev.resenaGenerada as any)?.textoExtracto || ''} 
                                                             onChange={(e) => {
                                                                 const nuevas = [...fd.evidenciasSociales!];
+                                                                if (!nuevas[index].resenaGenerada) nuevas[index].resenaGenerada = {};
                                                                 nuevas[index].resenaGenerada.comentario = e.target.value;
+                                                                delete (nuevas[index].resenaGenerada as any).textoExtracto;
                                                                 setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
                                                             }}
                                                             className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:border-red-500 outline-none min-h-[80px]"
@@ -303,13 +425,37 @@ export const AgencyFullEditor: React.FC<AgencyFullEditorProps> = ({ agency, onSa
                                                         <div className="ml-4 pl-3 border-l-2 border-pink-100 space-y-2 mt-2">
                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hilos Detectados</span>
                                                             {ev.replies.map((reply, rIdx) => (
-                                                                <div key={rIdx} className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                                                    <div className="text-[10px] font-bold text-slate-800 mb-1">Afectado en hilo</div>
+                                                                <div key={rIdx} className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 relative group">
+                                                                    <div className="flex justify-between items-center mb-1">
+                                                                        <div className="text-[10px] font-bold text-slate-800 flex items-center gap-2">
+                                                                            Afectado en hilo
+                                                                            <select 
+                                                                                value={typeof reply.resenaGenerada?.calificacion === 'number' ? reply.resenaGenerada.calificacion : 0} 
+                                                                                onChange={(e) => {
+                                                                                    const nuevas = [...fd.evidenciasSociales!];
+                                                                                    if (!nuevas[index].replies![rIdx].resenaGenerada) nuevas[index].replies![rIdx].resenaGenerada = {};
+                                                                                    nuevas[index].replies![rIdx].resenaGenerada.calificacion = Number(e.target.value);
+                                                                                    setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
+                                                                                }}
+                                                                                className="text-[9px] font-normal bg-slate-200/50 border border-slate-200 rounded px-1 outline-none focus:border-pink-400 text-slate-600 cursor-pointer"
+                                                                            >
+                                                                                <option value={0}>Neutro</option>
+                                                                                <option value={1}>1 Estrella</option>
+                                                                                <option value={2}>2 Estrellas</option>
+                                                                                <option value={3}>3 Estrellas</option>
+                                                                                <option value={4}>4 Estrellas</option>
+                                                                                <option value={5}>5 Estrellas</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <button type="button" onClick={() => handleDeleteSocialEvidenceReply(index, rIdx)} className="text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold flex items-center gap-1"><TrashIcon className="w-3 h-3" /></button>
+                                                                    </div>
                                                                     <textarea 
-                                                                        value={reply.resenaGenerada?.comentario || ''} 
+                                                                        value={reply.resenaGenerada?.comentario || (reply.resenaGenerada as any)?.textoExtracto || ''} 
                                                                         onChange={(e) => {
                                                                             const nuevas = [...fd.evidenciasSociales!];
+                                                                            if (!nuevas[index].replies![rIdx].resenaGenerada) nuevas[index].replies![rIdx].resenaGenerada = {};
                                                                             nuevas[index].replies![rIdx].resenaGenerada.comentario = e.target.value;
+                                                                            delete (nuevas[index].replies![rIdx].resenaGenerada as any).textoExtracto;
                                                                             setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
                                                                         }}
                                                                         className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 focus:border-red-500 outline-none min-h-[50px]"

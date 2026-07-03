@@ -75,25 +75,58 @@ export function calculateSocialVerdict(agency: Inmobiliaria, reviews: Resena[]):
 
     // 1. Nativas (Veritas)
     if (reviews && reviews.length > 0) {
-        const sum = reviews.reduce((acc, r) => acc + (r.calificacion || 0), 0);
-        veritasScore = sum / reviews.length;
-        veritasWeight = 0.50;
+        let sum = 0;
+        let count = 0;
+        reviews.forEach(r => {
+            if (typeof r.calificacion === 'number' && r.calificacion > 0) {
+                sum += r.calificacion;
+                count++;
+            }
+            if (r.replies && r.replies.length > 0) {
+                r.replies.forEach(reply => {
+                    if (typeof reply.calificacion === 'number' && reply.calificacion > 0) {
+                        sum += reply.calificacion;
+                        count++;
+                    }
+                });
+            }
+        });
+        if (count > 0) {
+            veritasScore = sum / count;
+            veritasWeight = 0.50;
+        }
     }
 
     // 2. Externas (Redes Sociales)
     const evidencias = agency.evidenciasSociales || [];
     if (evidencias.length > 0) {
         let sum = 0;
+        let count = 0;
         evidencias.forEach(ev => {
-            if (ev.resenaGenerada && ev.resenaGenerada.calificacion) {
-                sum += ev.resenaGenerada.calificacion;
+            if (ev.resenaGenerada && typeof ev.resenaGenerada.calificacion === 'number') {
+                if (ev.resenaGenerada.calificacion > 0) {
+                    sum += ev.resenaGenerada.calificacion;
+                    count++;
+                }
             } else {
-                // Default a 1 si no hay calificación explícita (asumiendo queja por defecto si se reportó)
+                // Default a 1 si no hay calificación explícita
                 sum += 1;
+                count++;
+            }
+            
+            if (ev.replies && ev.replies.length > 0) {
+                ev.replies.forEach(reply => {
+                    if (reply.resenaGenerada && typeof reply.resenaGenerada.calificacion === 'number' && reply.resenaGenerada.calificacion > 0) {
+                        sum += reply.resenaGenerada.calificacion;
+                        count++;
+                    }
+                });
             }
         });
-        externalScore = sum / evidencias.length;
-        externalWeight = 0.30;
+        if (count > 0) {
+            externalScore = sum / count;
+            externalWeight = 0.30;
+        }
     }
 
     // 3. Noticias (Menciones Web)

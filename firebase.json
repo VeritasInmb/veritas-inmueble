@@ -6,8 +6,5 @@
       "**/.*",
       "**/node_modules/**"
     ]
-  },
-  "firestore": {
-    "indexes": "firestore.indexes.json"
   }
 }

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(req: NextRequest) {
     try {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const { images } = await req.json(); // Array of { data, mimeType }
         
         if (!images || !images.length) {

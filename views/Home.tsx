@@ -385,7 +385,7 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
             
             <section className="mb-16">
                 <div className="flex justify-between items-center mb-8"><h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Las Más Seguras <span className="text-green-500">Hoy</span></h2><button onClick={() => onNavigate('directory')} className="text-slate-900 font-bold hover:text-red-600 transition">Ver todas &rarr;</button></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{topHomeAgencies.slice(0, 4).map((agency) => <AgencyCard key={agency.id} agency={agency} onSelect={(agency) => onNavigate('profile', agency)} isSelected={false} showCompare={false} />)}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{topHomeAgencies.slice(0, 4).map((agency) => <AgencyCard key={agency.id} agency={agency} onSelect={(agency) => onNavigate('profile', agency)} />)}</div>
             </section>
 
             {/* SECCIÓN 1: EL MURO DE LA VERGÜENZA */}
@@ -409,8 +409,6 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
                                     key={agency.id} 
                                     agency={agency} 
                                     onSelect={(agency) => onNavigate('profile', agency)} 
-                                    isSelected={false} 
-                                    showCompare={false} 
                                 />
                             ))}
                         </div>

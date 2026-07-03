@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Directory } from '../../views/Directory';
 import { useRouter } from 'next/navigation';
 import { Inmobiliaria } from '../../types';
+import { createSlug } from '../../utils/slugify';
 
 export default function DirectoryPage() {
     const router = useRouter();
@@ -15,7 +16,7 @@ export default function DirectoryPage() {
 
     return (
         <Directory 
-            onNavigate={(view, agency) => router.push(`/inmobiliaria/${agency.id}`)}
+            onNavigate={(view, agency) => router.push(`/inmobiliaria/${createSlug(agency.nombre, agency.id)}`)}
             onToggleCompare={handleToggleCompare}
             comparisonList={comparisonList}
         />

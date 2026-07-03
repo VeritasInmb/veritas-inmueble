@@ -14,9 +14,9 @@ export const Directory: React.FC<DirectoryProps> = ({ onNavigate, onToggleCompar
     const [directorySearchTerm, setDirectorySearchTerm] = useState('');
     const [directoryFilters, setDirectoryFilters] = useState({ state: 'all', sortBy: 'score', order: 'desc' });
     
-    // Local State for Agencies
     const [agencies, setAgencies] = useState<Inmobiliaria[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [algoliaResults, setAlgoliaResults] = useState<Inmobiliaria[] | null>(null);
 
     // Fetch Agencies on Mount
     useEffect(() => {
@@ -34,14 +34,52 @@ export const Directory: React.FC<DirectoryProps> = ({ onNavigate, onToggleCompar
         fetchAgencies();
     }, []);
 
+    // Algolia Search Effect
+    useEffect(() => {
+        const performSearch = async () => {
+            if (!directorySearchTerm.trim()) {
+                setAlgoliaResults(null);
+                return;
+            }
+            try {
+                const { algoliaClient, INDEX_NAME } = await import('../lib/algolia');
+                const { results } = await algoliaClient.search({
+                    requests: [
+                        {
+                            indexName: INDEX_NAME,
+                            query: directorySearchTerm,
+                            hitsPerPage: 100, // Sufficient for directory search
+                        },
+                    ],
+                });
+                const hits = (results[0] as any).hits as any[];
+                const mappedHits = hits.map(hit => ({ ...hit, id: hit.objectID || hit.id } as Inmobiliaria));
+                setAlgoliaResults(mappedHits);
+            } catch (error) {
+                console.error("Algolia search error in directory:", error);
+                setAlgoliaResults(null); // Fallback to local
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            performSearch();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [directorySearchTerm]);
+
     const uniqueStates = useMemo(() => ['all', ...Array.from(new Set(agencies.map(a => a.estado).filter(Boolean))).sort()], [agencies]);
 
     const filteredAndSortedDirectoryAgencies = useMemo(() => { 
-        let r = directorySearchTerm.trim() ? agencies.filter(a => a.nombre.toLowerCase().includes(directorySearchTerm.toLowerCase())) : [...agencies]; 
+        let r = algoliaResults !== null 
+            ? [...algoliaResults] 
+            : directorySearchTerm.trim() 
+                ? agencies.filter(a => a.nombre.toLowerCase().includes(directorySearchTerm.toLowerCase())) 
+                : [...agencies]; 
+                
         if (directoryFilters.state !== 'all') r = r.filter(a => a.estado === directoryFilters.state); 
         r.sort((a, b) => directoryFilters.sortBy === 'score' ? Number(b.score ?? 0) - Number(a.score ?? 0) : (a.estado || '').localeCompare(b.estado || '')); 
         return directoryFilters.order === 'asc' ? r : r.reverse(); 
-    }, [agencies, directoryFilters, directorySearchTerm]);
+    }, [agencies, algoliaResults, directoryFilters, directorySearchTerm]);
 
     if (isLoading) {
         return <div className="min-h-screen pt-32 flex justify-center"><SpinnerIcon className="w-12 h-12 text-red-600 animate-spin"/></div>;

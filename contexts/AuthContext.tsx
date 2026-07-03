@@ -57,7 +57,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             nombre: user.displayName || 'Usuario Nuevo',
                             email: user.email || '',
                             rol: 'usuario', 
-                            bio: '',
                             avatarUrl: user.photoURL || '',
                             profileColor: uniqueColor, 
                             createdAt: firebase.firestore.FieldValue.serverTimestamp(),

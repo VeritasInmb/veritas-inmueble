@@ -5,6 +5,7 @@ import { Home } from '../views/Home';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { useVeritasData } from '../hooks/useVeritasData';
+import { createSlug } from '../utils/slugify';
 
 export default function HomePage() {
     const router = useRouter();
@@ -15,7 +16,7 @@ export default function HomePage() {
         <Home 
             stats={stats} 
             onNavigate={(view, agency) => {
-                if (view === 'profile' && agency) router.push(`/inmobiliaria/${agency.id}`);
+                if (view === 'profile' && agency) router.push(`/inmobiliaria/${createSlug(agency.nombre, agency.id)}`);
                 else if (view === 'directory') router.push('/directorio');
             }} 
         />

@@ -1,16 +1,42 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { auth, db } from '../services/firebase';
 import { SpinnerIcon, WarningIcon, UserIcon, InboxIcon, SendIcon } from './Icons';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 interface LoginProps {
     onSkip?: () => void;
 }
 
+const loginSchema = z.object({
+    email: z.string().min(1, "El correo es requerido").email("Correo electrónico inválido"),
+    password: z.string().min(1, "La contraseña es requerida"),
+});
+
+const registerSchema = z.object({
+    fullName: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+    email: z.string().min(1, "El correo es requerido").email("Correo electrónico inválido"),
+    password: z.string()
+        .min(8, "Mínimo 8 caracteres")
+        .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
+        .regex(/[0-9]/, "Debe contener al menos un número"),
+    confirmPassword: z.string().min(1, "Confirma tu contraseña"),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+});
+
+type FormValues = {
+    email?: string;
+    password?: string;
+    fullName?: string;
+    confirmPassword?: string;
+};
+
 export const Login: React.FC<LoginProps> = ({ onSkip }) => {
     const router = useRouter();
-    const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isRegistering, setIsRegistering] = useState(false);
     
@@ -20,12 +46,14 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
         }
     }, [searchParams]);
 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [fullName, setFullName] = useState('');
+    const schema = isRegistering ? registerSchema : loginSchema;
     
-    const [error, setError] = useState<string | null>(null);
+    const { register, handleSubmit, formState: { errors }, reset, clearErrors } = useForm<FormValues>({
+        resolver: zodResolver(schema) as any,
+        mode: 'onChange'
+    });
+    
+    const [globalError, setGlobalError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     
     // Nuevo Estado: Correo enviado
@@ -47,8 +75,6 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
                 return 'Este correo ya está registrado. Intenta iniciar sesión.';
             case 'auth/invalid-email':
                 return 'El correo electrónico no es válido.';
-            case 'auth/weak-password':
-                return 'La contraseña es muy débil (mínimo 6 caracteres).';
             case 'auth/user-not-found':
                 return 'No existe una cuenta con este correo.';
             case 'auth/wrong-password':
@@ -62,26 +88,21 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: FormValues) => {
         setIsLoading(true);
-        setError(null);
+        setGlobalError(null);
         
         try {
             if (isRegistering) {
                 // --- REGISTRO ---
-                if (password !== confirmPassword) throw new Error("Las contraseñas no coinciden.");
-                if (password.length < 6) throw new Error("Mínimo 6 caracteres.");
-                if (!fullName.trim()) throw new Error("Nombre requerido.");
-
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const userCredential = await auth.createUserWithEmailAndPassword(data.email!, data.password!);
                 if (userCredential.user) {
-                    await userCredential.user.updateProfile({ displayName: fullName });
+                    await userCredential.user.updateProfile({ displayName: data.fullName });
                     
                     const uid = userCredential.user.uid;
                     const initialData = {
-                        nombre: fullName,
-                        email: email,
+                        nombre: data.fullName,
+                        email: data.email,
                         rol: 'usuario',
                         verificado: false, 
                         profileColor: '#cccccc', 
@@ -96,14 +117,13 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
 
             } else {
                 // --- LOGIN ---
-                await auth.signInWithEmailAndPassword(email, password);
+                await auth.signInWithEmailAndPassword(data.email!, data.password!);
                 router.push('/');
             }
         } catch (error: any) {
             console.error("Auth Error:", error);
-            // Usar mensaje amigable o el mensaje del error si no es de Firebase auth
             const msg = error.code ? getFriendlyErrorMessage(error.code) : error.message;
-            setError(msg);
+            setGlobalError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -116,10 +136,10 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
             setResending(true);
             try {
                 await auth.currentUser.sendEmailVerification();
-                setResendCooldown(60); // 60 segundos de espera
+                setResendCooldown(60);
                 alert("Correo reenviado. Revisa tu bandeja de entrada y Spam.");
             } catch (e: any) {
-                setError(getFriendlyErrorMessage(e.code));
+                setGlobalError(getFriendlyErrorMessage(e.code));
             } finally {
                 setResending(false);
             }
@@ -132,7 +152,6 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
             if (auth.currentUser.emailVerified) {
                 router.push('/');
             } else {
-                // Recargar solo si es estrictamente necesario para actualizar estado
                 window.location.reload(); 
             }
         } else {
@@ -142,9 +161,9 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
 
     const toggleMode = () => {
         setIsRegistering(!isRegistering);
-        setError(null);
-        setPassword('');
-        setConfirmPassword('');
+        setGlobalError(null);
+        clearErrors();
+        reset();
         setIsVerificationSent(false);
     };
 
@@ -161,8 +180,7 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
                     
                     <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">¡Casi listo!</h2>
                     <p className="text-slate-600 font-medium text-base mb-8 leading-relaxed">
-                        Hemos enviado un enlace de confirmación a: <br/>
-                        <span className="font-bold text-slate-900 block mt-1 text-lg">{email}</span>
+                        Hemos enviado un enlace de confirmación a tu correo.
                     </p>
                     
                     <div className="bg-slate-50 p-4 rounded-2xl mb-8 text-sm text-slate-500 border border-slate-100">
@@ -202,7 +220,7 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
                     </p>
                 </div>
                 
-                <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+                <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
                     
                     {isRegistering && (
                         <div>
@@ -213,13 +231,12 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
                                 </div>
                                 <input
                                     type="text"
-                                    required={isRegistering}
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-3 border-2 border-slate-100 rounded-2xl bg-slate-50 focus:outline-none focus:bg-white focus:border-red-500 transition-colors"
+                                    {...register("fullName")}
+                                    className={`block w-full pl-10 pr-3 py-3 border-2 ${errors.fullName ? 'border-red-300 focus:border-red-500' : 'border-slate-100 focus:border-red-500'} rounded-2xl bg-slate-50 focus:outline-none focus:bg-white transition-colors`}
                                     placeholder="Ej. Juan Pérez"
                                 />
                             </div>
+                            {errors.fullName && <p className="mt-1 text-xs text-red-500 ml-1 font-medium">{errors.fullName.message}</p>}
                         </div>
                     )}
 
@@ -227,24 +244,22 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
                         <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Correo Electrónico</label>
                         <input
                             type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="block w-full px-4 py-3 border-2 border-slate-100 rounded-2xl bg-slate-50 focus:outline-none focus:bg-white focus:border-red-500 transition-colors"
+                            {...register("email")}
+                            className={`block w-full px-4 py-3 border-2 ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-slate-100 focus:border-red-500'} rounded-2xl bg-slate-50 focus:outline-none focus:bg-white transition-colors`}
                             placeholder="tu@correo.com"
                         />
+                        {errors.email && <p className="mt-1 text-xs text-red-500 ml-1 font-medium">{errors.email.message}</p>}
                     </div>
 
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Contraseña</label>
                         <input
                             type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="block w-full px-4 py-3 border-2 border-slate-100 rounded-2xl bg-slate-50 focus:outline-none focus:bg-white focus:border-red-500 transition-colors"
+                            {...register("password")}
+                            className={`block w-full px-4 py-3 border-2 ${errors.password ? 'border-red-300 focus:border-red-500' : 'border-slate-100 focus:border-red-500'} rounded-2xl bg-slate-50 focus:outline-none focus:bg-white transition-colors`}
                             placeholder="••••••••"
                         />
+                        {errors.password && <p className="mt-1 text-xs text-red-500 ml-1 font-medium">{errors.password.message}</p>}
                     </div>
 
                     {isRegistering && (
@@ -252,19 +267,18 @@ export const Login: React.FC<LoginProps> = ({ onSkip }) => {
                             <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Confirmar Contraseña</label>
                             <input
                                 type="password"
-                                required={isRegistering}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="block w-full px-4 py-3 border-2 border-slate-100 rounded-2xl bg-slate-50 focus:outline-none focus:bg-white focus:border-red-500 transition-colors"
+                                {...register("confirmPassword")}
+                                className={`block w-full px-4 py-3 border-2 ${errors.confirmPassword ? 'border-red-300 focus:border-red-500' : 'border-slate-100 focus:border-red-500'} rounded-2xl bg-slate-50 focus:outline-none focus:bg-white transition-colors`}
                                 placeholder="••••••••"
                             />
+                            {errors.confirmPassword && <p className="mt-1 text-xs text-red-500 ml-1 font-medium">{errors.confirmPassword.message}</p>}
                         </div>
                     )}
 
-                    {error && (
+                    {globalError && (
                         <div className="flex items-center text-sm text-red-600 bg-red-50 p-3 rounded-xl animate-pulse">
                             <WarningIcon className="w-5 h-5 mr-2 flex-shrink-0"/>
-                            <span className="font-medium">{error}</span>
+                            <span className="font-medium">{globalError}</span>
                         </div>
                     )}
 

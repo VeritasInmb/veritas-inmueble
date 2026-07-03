@@ -124,9 +124,42 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
         return () => clearInterval(interval);
     }, [topicsToDisplay.length]);
 
-    const searchDropdownResults = useMemo(() => 
-        !searchTerm.trim() ? [] : agencies.filter(a => a.nombre.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 5), 
-    [agencies, searchTerm]);
+    const [searchDropdownResults, setSearchDropdownResults] = useState<Inmobiliaria[]>([]);
+
+    useEffect(() => {
+        const performSearch = async () => {
+            if (!searchTerm.trim()) {
+                setSearchDropdownResults([]);
+                return;
+            }
+            try {
+                // Dynamic import to avoid SSR issues if any, or just use the lib
+                const { algoliaClient, INDEX_NAME } = await import('../lib/algolia');
+                const { results } = await algoliaClient.search({
+                    requests: [
+                        {
+                            indexName: INDEX_NAME,
+                            query: searchTerm,
+                            hitsPerPage: 5,
+                        },
+                    ],
+                });
+                const hits = (results[0] as any).hits as any[];
+                // Map Algolia objectID to id for compatibility
+                const mappedHits = hits.map(hit => ({ ...hit, id: hit.objectID || hit.id } as Inmobiliaria));
+                setSearchDropdownResults(mappedHits);
+            } catch (error) {
+                console.error("Algolia search error:", error);
+                // Fallback a filtrado local si falla (ej. si aún no ponen la API Key)
+                setSearchDropdownResults(agencies.filter(a => a.nombre.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 5));
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            performSearch();
+        }, 300); // Debounce 300ms
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, agencies]);
 
     const topHomeAgencies = useMemo(() => 
         [...agencies].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)), 

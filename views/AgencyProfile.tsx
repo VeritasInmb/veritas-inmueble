@@ -190,8 +190,29 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
         }
     };
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        name: agency.nombre,
+        image: agency.imageUrl || 'https://www.veritasinmueble.com/favicon.ico',
+        address: {
+            '@type': 'PostalAddress',
+            addressRegion: agency.estado || 'Mexico',
+            addressCountry: 'MX'
+        },
+        ...(agency.score ? {
+            aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: agency.score.toString(),
+                bestRating: '10',
+                ratingCount: reviews.length > 0 ? reviews.length : 1
+            }
+        } : {})
+    };
+
     return (
         <main className="flex-1 w-full max-w-[1024px] mx-auto pt-24 md:pt-32 px-4 md:px-6 py-4 md:py-6 relative overflow-hidden">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-red-50 to-transparent rounded-bl-full pointer-events-none -z-10"></div>
             <div className="absolute font-black text-4xl md:text-[64px] text-slate-900/5 top-8 md:-top-2 right-4 md:right-8 pointer-events-none select-none -z-10 tracking-tighter">FORENSE</div>
 

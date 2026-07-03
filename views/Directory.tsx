@@ -6,11 +6,9 @@ import { firebase } from '../services/firebase';
 
 interface DirectoryProps {
     onNavigate: (view: 'profile', agency: Inmobiliaria) => void;
-    onToggleCompare: (agency: Inmobiliaria) => void;
-    comparisonList: Inmobiliaria[];
 }
 
-export const Directory: React.FC<DirectoryProps> = ({ onNavigate, onToggleCompare, comparisonList }) => {
+export const Directory: React.FC<DirectoryProps> = ({ onNavigate }) => {
     const [directorySearchTerm, setDirectorySearchTerm] = useState('');
     const [directoryFilters, setDirectoryFilters] = useState({ state: 'all', sortBy: 'score', order: 'desc' });
     
@@ -108,7 +106,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onNavigate, onToggleCompar
                 </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredAndSortedDirectoryAgencies.map((agency) => <AgencyCard key={agency.id} agency={agency} onSelect={(agency) => onNavigate('profile', agency)} isSelected={comparisonList.some(item => item.id === agency.id)} onToggleCompare={onToggleCompare} showCompare={true} />)}
+                {filteredAndSortedDirectoryAgencies.map((agency) => <AgencyCard key={agency.id} agency={agency} onSelect={(agency) => onNavigate('profile', agency)} />)}
             </div>
             {filteredAndSortedDirectoryAgencies.length === 0 && <div className="text-center py-24"><p className="text-2xl font-black text-slate-400">No encontramos nada...</p><p className="text-slate-500 mt-2">Intenta ajustar tus filtros.</p></div>}
         </main>

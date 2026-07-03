@@ -8,12 +8,9 @@ import { CheckCircleIcon, WarningIcon, DocumentIcon, StarIcon, BuildingOfficeIco
 interface AgencyCardProps { 
     agency: Inmobiliaria; 
     onSelect: (agency: Inmobiliaria) => void; 
-    onToggleCompare?: (agency: Inmobiliaria) => void; 
-    isSelected?: boolean; 
-    showCompare?: boolean; 
 }
 
-export const AgencyCard: React.FC<AgencyCardProps> = ({ agency, onSelect, onToggleCompare, isSelected, showCompare = true }) => {
+export const AgencyCard: React.FC<AgencyCardProps> = ({ agency, onSelect }) => {
     const [localAgency, setLocalAgency] = useState<Inmobiliaria>(agency);
     const calculatedScore = localAgency.score ?? calculateAgencyScore(localAgency);
     const scoreInfo = getScoreInfo(calculatedScore);
@@ -54,11 +51,8 @@ export const AgencyCard: React.FC<AgencyCardProps> = ({ agency, onSelect, onTogg
     }, [agency]);
 
     return (
-        <div className={`rounded-[2rem] shadow-xl shadow-slate-200/50 transition-all duration-300 group cursor-pointer relative energy-card-wrapper ${isSelected ? 'active-energy' : ''}`} onClick={() => onSelect(localAgency)}>
+        <div className={`rounded-[2rem] shadow-xl shadow-slate-200/50 transition-all duration-300 group cursor-pointer relative energy-card-wrapper`} onClick={() => onSelect(localAgency)}>
             <div className="bg-white rounded-[1.9rem] p-5 h-full w-full relative z-10">
-                {showCompare && <button onClick={(e) => { e.stopPropagation(); onToggleCompare && onToggleCompare(localAgency); }} className={`absolute top-5 left-5 z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-red-500 border-red-500 text-white' : 'bg-white border-slate-200 text-transparent hover:border-red-500 hover:text-red-500'}`}>
-                    <CheckCircleIcon className="w-5 h-5" />
-                </button>}
                 <div className="absolute top-5 right-5 flex items-center gap-1.5 bg-slate-100/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200/50 shadow-sm">
                     <div className={`w-2 h-2 rounded-full ${scoreInfo.textColor === 'text-green-500' ? 'bg-green-500' : scoreInfo.textColor === 'text-teal-500' ? 'bg-teal-500' : scoreInfo.textColor === 'text-yellow-500' ? 'bg-yellow-500' : 'bg-red-500'} animate-pulse`}></div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{scoreInfo.veredicto}</span>

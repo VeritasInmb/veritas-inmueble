@@ -11,7 +11,7 @@ import { SpinnerIcon } from '../components/Icons';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { useVeritasData } from '../hooks/useVeritasData';
-import { ReviewModal, ComparisonModal, ConfirmationModal, ComparisonBar, AuthModal } from '../components/SharedComponents';
+import { ReviewModal, ConfirmationModal, AuthModal } from '../components/SharedComponents';
 
 export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { currentUser, loading: authLoading } = useAuth();
@@ -28,14 +28,10 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
     // UI State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false); 
-    const [comparisonList, setComparisonList] = useState<Inmobiliaria[]>([]);
-    const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
     
     // Handlers
     const handleLogout = async () => { await auth.signOut(); router.push('/'); };
     const handleRequireAuth = () => setIsAuthModalOpen(true);
-    const handleToggleCompare = (agency: Inmobiliaria) => setComparisonList(p => p.some(i => i.id === agency.id) ? p.filter(i => i.id !== agency.id) : p.length < 4 ? [...p, agency] : p);
-    const handleClearComparison = () => setComparisonList([]);
 
     const handleAdminReviewSubmit = async (data: { nombre: string; url: string }) => { 
         if (!currentUser) { handleRequireAuth(); return; } 
@@ -66,15 +62,12 @@ export const ClientLayout: React.FC<{ children: React.ReactNode }> = ({ children
                 userId={currentUser?.id}
                 emailVerified={currentUser?.emailVerified}
             />
-            <div className={`flex-grow transition-opacity duration-300 opacity-100 ${comparisonList.length > 0 && pathname === '/directorio' ? 'pb-28' : ''}`}>
+            <div className={`flex-grow transition-opacity duration-300 opacity-100`}>
                 {children}
             </div>
             <Footer showAdminLink={currentUser?.rol === 'admin'} className={isForum ? 'mt-0' : undefined} />
             
-            {comparisonList.length > 0 && pathname === '/directorio' && (<ComparisonBar agencies={comparisonList} onCompare={() => setIsComparisonModalOpen(true)} onClear={handleClearComparison}/>)}
-            
             <ReviewModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleAdminReviewSubmit} currentUser={currentUser} onRequireAuth={handleRequireAuth} />
-            <ComparisonModal isOpen={isComparisonModalOpen} onClose={() => setIsComparisonModalOpen(false)} agencies={comparisonList} />
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLogin={() => { setIsAuthModalOpen(false); router.push('/login'); }} />
         </div>
     );

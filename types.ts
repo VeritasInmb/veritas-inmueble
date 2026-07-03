@@ -102,6 +102,7 @@ export interface Reply {
   usuarioAvatar?: string;
   usuarioColor?: string;
   comentario: string;
+  calificacion?: number;
   fecha: any; // Firestore Timestamp
 }
 

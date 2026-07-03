@@ -20,9 +20,6 @@ interface UserProfileProps {
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({ user, currentTab, setCurrentTab, notifications, onNotificationClick, userActivity, isLoadingActivity, onReviewClick, onTopicClick }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [bio, setBio] = useState(user.bio || '');
-    const [isSaving, setIsSaving] = useState(false);
     const [loadingNotificationId, setLoadingNotificationId] = useState<string | null>(null);
     
     // Verification Logic
@@ -40,13 +37,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentTab, setC
         }
     }, [cooldown]);
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        // Only saving bio updates now, no avatar upload
-        await db.collection('usuarios').doc(user.id).update({ bio });
-        setIsSaving(false);
-        setIsEditing(false);
-    };
+
 
     const handleNotifClick = async (notification: Notification) => {
         setLoadingNotificationId(notification.id);
@@ -110,31 +101,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentTab, setC
                     </div>
 
                     <div className="w-full h-px bg-slate-100 my-4"></div>
-
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Biografía</p>
                     
-                    {isEditing ? (
-                        <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm focus:outline-none focus:border-slate-300 transition" placeholder="Escribe algo sobre ti..." rows={3} />
-                    ) : (
-                        <p className="text-slate-600 text-sm leading-relaxed italic">
-                            "{user.bio || 'Sin biografía aún.'}"
-                        </p>
-                    )}
-                    
-                    <p className="text-slate-300 text-xs font-bold mt-4">Miembro desde {formatDate(user.createdAt || Timestamp.now())}</p>
-
-                    {isEditing ? (
-                         <div className="flex gap-2 mt-4">
-                            <button onClick={() => { setIsEditing(false); setBio(user.bio || ''); }} className="flex-1 py-2 bg-slate-100 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-200 transition">Cancelar</button>
-                            <button onClick={handleSave} disabled={isSaving} className="flex-1 py-2 bg-red-600 rounded-full text-xs font-bold text-white hover:bg-red-700 transition flex items-center justify-center gap-1">
-                                {isSaving ? <SpinnerIcon className="w-4 h-4"/> : 'Guardar'}
-                            </button>
-                         </div>
-                    ) : (
-                        <button onClick={() => setIsEditing(true)} className="w-full mt-4 py-2 bg-slate-50 border border-slate-100 rounded-full text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center justify-center gap-2">
-                            <PencilIcon className="w-3 h-3" /> Editar Bio
-                        </button>
-                    )}
+                    <p className="text-slate-400 text-xs font-bold mt-4">Miembro desde {formatDate(user.createdAt || Timestamp.now())}</p>
                 </div>
                 <nav className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-2 flex flex-col gap-1">
                     <button onClick={() => setCurrentTab('activity')} className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-2xl font-semibold transition ${currentTab === 'activity' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>

@@ -90,7 +90,6 @@ export interface Usuario {
   rol: 'admin' | 'usuario';
   avatarUrl?: string; // Optional avatar URL
   profileColor?: string; // Persistent profile color
-  bio?: string; // New: user biography
   createdAt?: any; // Firestore Timestamp
   verificado?: boolean; // Custom verification status
   verificationCode?: string; // Temporary code for OTP flow

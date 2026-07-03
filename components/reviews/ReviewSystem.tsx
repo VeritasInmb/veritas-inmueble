@@ -103,14 +103,26 @@ export const ReviewForm: React.FC<{ onSubmit: (data: Omit<Resena, 'id' | 'usuari
 
     return (
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
-            <h4 className="text-xl font-black text-slate-900 mb-2">¿Cuál fue tu experiencia real?</h4>
-            <p className="text-slate-500 mb-6 font-medium">Tu opinión puede salvar a otros de un fraude o recomendar un buen servicio.</p>
+            <h4 className="text-2xl md:text-3xl font-black text-slate-900 mb-1 tracking-tighter">¿Cuál fue tu experiencia?</h4>
+            <p className="text-slate-500 mb-8 font-medium">Tu opinión salva a otros.</p>
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                    <div><label className="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1 tracking-wider">Comunicación</label><StarRatingInput rating={ratings.comunicacion} setRating={(r) => handleRatingChange('comunicacion', r)} /></div>
-                    <div><label className="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1 tracking-wider">Contrato</label><StarRatingInput rating={ratings.contrato} setRating={(r) => handleRatingChange('contrato', r)} /></div>
-                    <div><label className="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1 tracking-wider">Propiedad</label><StarRatingInput rating={ratings.propiedad} setRating={(r) => handleRatingChange('propiedad', r)} /></div>
-                    <div><label className="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1 tracking-wider">Resolución</label><StarRatingInput rating={ratings.solucion} setRating={(r) => handleRatingChange('solucion', r)} /></div>
+                <div className="flex flex-col space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="block text-[10px] md:text-[11px] font-black uppercase text-slate-400 tracking-widest">Comunicación</label>
+                        <StarRatingInput rating={ratings.comunicacion} setRating={(r) => handleRatingChange('comunicacion', r)} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <label className="block text-[10px] md:text-[11px] font-black uppercase text-slate-400 tracking-widest">Contrato</label>
+                        <StarRatingInput rating={ratings.contrato} setRating={(r) => handleRatingChange('contrato', r)} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <label className="block text-[10px] md:text-[11px] font-black uppercase text-slate-400 tracking-widest">Propiedad</label>
+                        <StarRatingInput rating={ratings.propiedad} setRating={(r) => handleRatingChange('propiedad', r)} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <label className="block text-[10px] md:text-[11px] font-black uppercase text-slate-400 tracking-widest">Resolución</label>
+                        <StarRatingInput rating={ratings.solucion} setRating={(r) => handleRatingChange('solucion', r)} />
+                    </div>
                 </div>
                 <div>
                     <label className="block text-sm font-bold text-slate-900 mb-2 ml-1">Tu historia</label>
@@ -178,7 +190,7 @@ export const ReviewList: React.FC<{ reviews: Resena[], isLoading: boolean, onVot
     const RatingDetail: React.FC<{label: string, rating?: number}> = ({label, rating = 0}) => (<div className="flex justify-between items-center text-xs font-medium text-slate-600"><span className="bg-slate-100 px-2 py-1 rounded-full">{label}</span><div className="flex gap-0.5">{[...Array(5)].map((_, i) => <StarIcon key={i} className="w-3 h-3" filled={i < rating} />)}</div></div>);
 
     return (
-        <div className="space-y-6 mt-8">
+        <div className="space-y-6">
             <h4 className="text-2xl font-black text-slate-900 mb-6">Opiniones de la Comunidad</h4>
             {reviews.map(review => {
                 const likes = review.likedBy?.length || 0;
@@ -187,66 +199,95 @@ export const ReviewList: React.FC<{ reviews: Resena[], isLoading: boolean, onVot
                 const hasDisliked = currentUser ? review.dislikedBy?.includes(currentUser.id) : false;
                 const canDeleteReview = canDelete(review.usuarioId);
                 return (
-                    <div key={review.id} className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 transition hover:shadow-2xl hover:border-slate-200">
-                        <div className="flex items-start space-x-4">
+                    <div key={review.id} className="bg-white p-3 md:p-4 rounded-xl md:rounded-2xl shadow-md shadow-slate-200/40 border-2 border-red-200 transition relative hover:shadow-lg hover:border-red-400">
+                        <div className="absolute top-0 left-0 right-0 bg-red-100 px-3 md:px-4 py-1 flex justify-between items-center border-b border-red-100">
+                            <div className="flex items-center gap-1">
+                                <span className="material-symbols-outlined text-red-600 text-[9px] md:text-[10px]" data-weight="fill">verified_user</span>
+                                <span className="text-[7px] md:text-[8px] font-black tracking-widest text-red-600 uppercase">Reseña VeritasInmueble</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start space-x-2.5 pt-5 md:pt-6">
                             <div className="flex-shrink-0">
                                 <UserAvatar 
                                     name={review.usuarioNombre} 
                                     avatarUrl={review.usuarioAvatar} 
                                     color={review.usuarioColor} 
                                     userId={review.usuarioId}
-                                    className="w-12 h-12"
+                                    className="w-7 h-7 md:w-8 md:h-8 text-[10px] md:text-xs shadow-sm"
                                 />
                             </div>
+                            
                             <div className="flex-grow">
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                    <div className="flex items-center gap-3">
-                                        <p className="font-bold text-slate-900">{review.usuarioNombre}</p>
-                                        {review.verificada && <span className="flex items-center text-xs font-bold text-white bg-teal-500 px-2 py-0.5 rounded-full"><CheckCircleIcon className="w-3 h-3 mr-1"/> Verificada</span>}
-                                        {review.tieneEvidencia && !review.verificada && <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">Evidencia declarada</span>}
+                                <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+                                    <div className="flex items-center gap-1 md:gap-1.5">
+                                        <p className="font-bold text-slate-900 text-[10px] md:text-xs">{review.usuarioNombre}</p>
+                                        {review.verificada && <span className="flex items-center text-[7px] md:text-[8px] font-bold text-white bg-red-600 px-1 py-0.5 rounded-full uppercase">
+                                            <span className="material-symbols-outlined text-[8px] md:text-[9px] mr-0.5">check_circle</span> Verificada
+                                        </span>}
+                                        {review.tieneEvidencia && !review.verificada && <span className="flex items-center text-[7px] md:text-[8px] font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded-full border border-slate-200 uppercase">
+                                            Evidencia declarada
+                                        </span>}
                                     </div>
-                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full">
-                                        <div className="flex">{[...Array(5)].map((_, index) => (<StarIcon key={index} className="w-4 h-4" filled={index < review.calificacion} />))}</div>
-                                        {canDeleteReview && <button onClick={() => onDeleteReview(review.id)} className="text-slate-400 hover:text-red-500 transition ml-1"><TrashIcon className="w-4 h-4" /></button>}
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-wide">{formatDate(review.fecha)}</p>
+                                        {canDeleteReview && <button onClick={() => onDeleteReview(review.id)} className="text-slate-400 hover:text-red-500 transition ml-1"><TrashIcon className="w-3 h-3 md:w-4 md:h-4" /></button>}
                                     </div>
                                 </div>
-                                <p className="text-xs font-bold text-slate-400 mb-4 uppercase tracking-wide">{formatDate(review.fecha)}</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl mb-4">
-                                    <div className="space-y-2"><RatingDetail label="Comunicación" rating={review.calificacionesDetalladas?.comunicacion} /><RatingDetail label="Contrato" rating={review.calificacionesDetalladas?.contrato} /></div>
-                                    <div className="space-y-2"><RatingDetail label="Propiedad" rating={review.calificacionesDetalladas?.propiedad} /><RatingDetail label="Solución" rating={review.calificacionesDetalladas?.solucion} /></div>
+                                
+                                <div className="grid grid-cols-2 gap-1 bg-slate-50 p-1.5 md:p-2 rounded-lg mb-1.5 md:mb-2 border border-slate-100">
+                                    <div className="flex justify-between items-center text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                                        <span>Comunicación</span><span className="text-yellow-400 flex flex-wrap">{[...Array(5)].map((_, index) => (<StarIcon key={index} className="w-2.5 h-2.5 md:w-3 md:h-3" filled={index < (review.calificacionesDetalladas?.comunicacion || 0)} />))}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                                        <span>Contrato</span><span className="text-yellow-400 flex flex-wrap">{[...Array(5)].map((_, index) => (<StarIcon key={index} className="w-2.5 h-2.5 md:w-3 md:h-3" filled={index < (review.calificacionesDetalladas?.contrato || 0)} />))}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                                        <span>Propiedad</span><span className="text-yellow-400 flex flex-wrap">{[...Array(5)].map((_, index) => (<StarIcon key={index} className="w-2.5 h-2.5 md:w-3 md:h-3" filled={index < (review.calificacionesDetalladas?.propiedad || 0)} />))}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[8px] md:text-[9px] font-bold text-slate-500 uppercase tracking-wide">
+                                        <span>Resolución</span><span className="text-yellow-400 flex flex-wrap">{[...Array(5)].map((_, index) => (<StarIcon key={index} className="w-2.5 h-2.5 md:w-3 md:h-3" filled={index < (review.calificacionesDetalladas?.solucion || 0)} />))}</span>
+                                    </div>
                                 </div>
-                                <p className="text-slate-700 leading-relaxed mb-4 whitespace-pre-wrap font-medium">{review.comentario}</p>
-                                <div className="flex items-center gap-4 mt-4">
-                                    <button onClick={() => onVote(review.id, 'like')} className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition font-bold text-sm ${hasLiked ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><span>👍</span><span>{likes}</span></button>
-                                    <button onClick={() => onVote(review.id, 'dislike')} className={`flex items-center gap-1.5 rounded-full transition font-bold text-sm ${hasDisliked ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><span>👎</span><span>{dislikes}</span></button>
+                                
+                                <p className="text-[10px] md:text-xs text-slate-800 leading-relaxed mb-2 whitespace-pre-wrap font-medium">{review.comentario}</p>
+                                
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <button onClick={() => onVote(review.id, 'like')} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-bold text-[9px] md:text-[10px] ${hasLiked ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>👍 {likes}</button>
+                                    <button onClick={() => onVote(review.id, 'dislike')} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-bold text-[9px] md:text-[10px] ${hasDisliked ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>👎 {dislikes}</button>
                                     {currentUser && (
-                                        <button onClick={() => setReplyingTo(replyingTo === review.id ? null : review.id)} className="text-sm font-bold text-slate-500 hover:text-red-600 transition px-2">Responder</button>
+                                        <button onClick={() => setReplyingTo(replyingTo === review.id ? null : review.id)} className="text-[9px] md:text-[10px] font-bold text-slate-500 hover:text-red-600 px-1 ml-auto">Responder</button>
                                     )}
                                 </div>
+
                                 {replyingTo === review.id && (
                                     <div className="mt-4 flex gap-2">
-                                        <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Respondiendo...`} className="flex-1 px-4 py-2 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-red-500 transition text-sm" rows={1}/>
-                                        <button onClick={() => handleSubmitReply(review.id)} disabled={isSubmittingReply} className="px-4 py-2 rounded-2xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50">{isSubmittingReply ? <SpinnerIcon className="w-4 h-4"/> : 'Enviar'}</button>
+                                        <textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Respondiendo...`} className="flex-1 px-4 py-2 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-red-600 transition text-[10px] md:text-xs" rows={1}/>
+                                        <button onClick={() => handleSubmitReply(review.id)} disabled={isSubmittingReply} className="px-4 py-2 rounded-2xl text-[10px] md:text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50">{isSubmittingReply ? <SpinnerIcon className="w-4 h-4"/> : 'Enviar'}</button>
                                     </div>
                                 )}
+
                                 {review.replies && review.replies.length > 0 && (
-                                    <div className="mt-4 pl-4 border-l-2 border-slate-200 space-y-3">
+                                    <div className="mt-2 pl-2 border-l-2 border-slate-200 space-y-1.5">
                                         {review.replies.map(reply => (
-                                            <div key={reply.id} className="bg-slate-50 rounded-2xl px-4 py-3 relative group">
-                                                <div className="flex items-start gap-3">
+                                            <div key={reply.id} className="bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100 relative group">
+                                                <div className="flex items-start gap-1.5">
                                                     <UserAvatar 
                                                         name={reply.usuarioNombre} 
                                                         avatarUrl={reply.usuarioAvatar} 
                                                         color={reply.usuarioColor} 
                                                         userId={reply.usuarioId}
-                                                        className="w-8 h-8"
+                                                        className="w-4 h-4 md:w-5 md:h-5 text-[8px] md:text-[9px]"
                                                     />
                                                     <div className="flex-1">
-                                                        <div className="flex justify-between items-baseline mb-1"><span className="font-bold text-slate-900 text-sm">{reply.usuarioNombre}</span><span className="text-xs text-slate-400 font-medium">{formatDate(reply.fecha)}</span></div>
-                                                        <p className="text-slate-600 text-sm">{reply.comentario}</p>
+                                                        <div className="flex justify-between items-baseline mb-0.5">
+                                                            <span className="font-bold text-slate-900 text-[9px] md:text-[10px]">{reply.usuarioNombre}</span>
+                                                            <span className="text-[8px] md:text-[9px] text-slate-400 font-medium">{formatDate(reply.fecha)}</span>
+                                                        </div>
+                                                        <p className="text-slate-600 text-[9px] md:text-[10px] font-medium">{reply.comentario}</p>
                                                     </div>
                                                 </div>
-                                                {canDelete(reply.usuarioId) && <button onClick={() => onDeleteReply(review.id, reply)} className="absolute top-3 right-3 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"><TrashIcon className="w-3 h-3" /></button>}
+                                                {canDelete(reply.usuarioId) && <button onClick={() => onDeleteReply(review.id, reply)} className="absolute top-1.5 right-1.5 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"><TrashIcon className="w-3 h-3" /></button>}
                                             </div>
                                         ))}
                                     </div>

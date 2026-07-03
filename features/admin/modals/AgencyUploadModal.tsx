@@ -19,10 +19,7 @@ export const AgencyUploadModal: React.FC<{ isOpen: boolean; onClose: () => void;
             headers.forEach((header, headerIndex) => { rowData[header] = values[headerIndex] ? values[headerIndex].trim() : ''; });
             try {
                 const score = parseInt(rowData.score, 10);
-                const quejas = parseInt(rowData.quejas, 10);
-                const googleRating = parseFloat(rowData.googleRating);
-                const antiguedad = parseInt(rowData.antiguedad, 10);
-                const newAgency: Omit<Inmobiliaria, 'id'> = { nombre: rowData.nombre || 'Sin Nombre', score: isNaN(score) ? 0 : score, quejas: isNaN(quejas) ? 0 : quejas, contrato: parseBoolean(rowData.contrato), googleRating: isNaN(googleRating) ? 0 : googleRating, miembroAMPI: parseBoolean(rowData.miembroAMPI), antiguedad: isNaN(antiguedad) ? 0 : antiguedad, rfcStatus: rowData.rfcStatus || 'N/A', domicilio: parseBoolean(rowData.domicilio), controversias: rowData.controversias || 'Ninguna', estado: rowData.estado || 'N/A', imageUrl: rowData.imageUrl || '' };
+                const newAgency: Omit<Inmobiliaria, 'id'> = { nombre: rowData.nombre || 'Sin Nombre', score: isNaN(score) ? 0 : score, contrato: parseBoolean(rowData.contrato), miembroAMPI: parseBoolean(rowData.miembroAMPI), rfcStatus: rowData.rfcStatus || 'N/A', domicilio: parseBoolean(rowData.domicilio), estado: rowData.estado || 'N/A', imageUrl: rowData.imageUrl || '' };
                 data.push(newAgency);
             } catch (e) { errors.push(`Error fila ${index + 2}: ${e}`); }
         });

@@ -18,12 +18,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = () => {
     
     // Global Delete State for Admin
     const [deletingItem, setDeletingItem] = useState<{ type: 'agency' | 'user' | 'request' | 'blog'; id: string } | null>(null);
-    
-    // Seeding States
-    const [isSeeding, setIsSeeding] = useState(false);
-    const [seedStatus, setSeedStatus] = useState<string>('');
-    const [isSeedingBlog, setIsSeedingBlog] = useState(false);
-    const [isSeedingAgencies, setIsSeedingAgencies] = useState(false);
 
     const confirmDelete = async () => { 
         if (!deletingItem) return; 
@@ -38,80 +32,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = () => {
         } 
         setDeletingItem(null); 
     };
-    
-    // --- Seeding Functions ---
-    const handleSeedForumData = async () => {
-        if (!auth.currentUser) { alert("No hay usuario autenticado."); return; }
-        setIsSeeding(true); setSeedStatus('Iniciando...');
-        try {
-            const batch = db.batch(); let count = 0;
-            mockForumTopics.forEach((topic) => { batch.set(db.collection('forum_topics').doc(topic.id), topic); count++; });
-            mockForumReplies.forEach((reply) => { batch.set(db.collection('forum_replies').doc(reply.id), reply); count++; });
-            setSeedStatus(`Enviando ${count} registros...`);
-            await batch.commit();
-            alert(`¡Éxito! Se han creado ${count} registros en la base de datos.`);
-            setSeedStatus('');
-        } catch (error: any) {
-            console.error("Error seeding forum:", error); setSeedStatus('Error.');
-            if (error.code === 'permission-denied') alert("ERROR DE PERMISOS: No tienes rol de 'admin'.");
-            else alert(`Error desconocido al guardar: ${error.message}`);
-        } finally { setIsSeeding(false); }
-    };
-
-    const handleSeedBlogData = async () => {
-        if (!auth.currentUser) { alert("No hay usuario autenticado."); return; }
-        setIsSeedingBlog(true);
-        try {
-            const batch = db.batch(); let count = 0;
-            seedBlogPosts.forEach((post) => { batch.set(db.collection('blogs').doc(String(post.id)), { ...post, id: String(post.id) }); count++; });
-            await batch.commit();
-            alert(`¡Éxito! Se han subido ${count} artículos del blog a Firestore.`);
-        } catch (error: any) { console.error("Error seeding blog:", error); alert(`Error al guardar blog: ${error.message}`); } 
-        finally { setIsSeedingBlog(false); }
-    };
-
-    const handleSeedTop20Agencies = async () => {
-        if (!auth.currentUser) { alert("No hay usuario autenticado."); return; }
-        setIsSeedingAgencies(true);
-        try {
-            const batch = db.batch(); let count = 0;
-            top20AgenciesData.forEach((agency) => { batch.set(db.collection('inmobiliarias').doc(), agency); count++; });
-            await batch.commit();
-            alert(`¡Éxito! Se han subido ${count} inmobiliarias a Firestore.`);
-        } catch (error: any) { console.error("Error seeding agencies:", error); alert(`Error al guardar inmobiliarias: ${error.message}`); } 
-        finally { setIsSeedingAgencies(false); }
-    };
 
     return (
         <main className="container mx-auto px-4 pt-24 pb-8">
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <h1 className="text-4xl font-black text-slate-900">Panel de Control</h1>
-                <div className="flex gap-3 flex-wrap justify-end">
-                    <button 
-                        onClick={handleSeedForumData} 
-                        disabled={isSeeding}
-                        className={`bg-teal-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-teal-700 transition shadow-md flex items-center gap-2 text-sm ${isSeeding ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {isSeeding ? <SpinnerIcon className="w-4 h-4"/> : <PlusIcon className="w-4 h-4"/>}
-                        {isSeeding ? seedStatus : 'Inicializar BD con Datos Demo'}
-                    </button>
-                    <button 
-                        onClick={handleSeedBlogData} 
-                        disabled={isSeedingBlog}
-                        className={`bg-blue-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-blue-700 transition shadow-md flex items-center gap-2 text-sm ${isSeedingBlog ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {isSeedingBlog ? <SpinnerIcon className="w-4 h-4"/> : <PlusIcon className="w-4 h-4"/>}
-                        Inicializar Blog
-                    </button>
-                    <button 
-                        onClick={handleSeedTop20Agencies} 
-                        disabled={isSeedingAgencies}
-                        className={`bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold hover:bg-indigo-700 transition shadow-md flex items-center gap-2 text-sm ${isSeedingAgencies ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {isSeedingAgencies ? <SpinnerIcon className="w-4 h-4"/> : <PlusIcon className="w-4 h-4"/>}
-                        Inicializar Top 20 Inmobiliarias
-                    </button>
-                </div>
             </div>
             
             <div className="flex flex-col md:flex-row gap-6">

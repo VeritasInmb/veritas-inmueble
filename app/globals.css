@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .bento-card {
+    @apply bg-white border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+  }
+  .bento-card-alert {
+    @apply bg-white border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+  }
+  .bento-card-dark {
+    @apply bg-slate-900 border border-slate-800 shadow-lg text-white transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+  }
+}
+
 /* Global Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;

@@ -38,12 +38,12 @@ export const ScoreDonutChart: React.FC<{ score: number; color: string; size?: 's
 export const StarRatingInput: React.FC<{ rating: number, setRating: (r: number) => void }> = ({ rating, setRating }) => {
     const [hoverRating, setHoverRating] = useState(0);
     return (
-        <div className="flex items-center bg-slate-100 p-3 rounded-2xl gap-1 w-fit">
+        <div className="flex items-center gap-1 w-max">
             {[...Array(5)].map((_, index) => {
                 const starValue = index + 1;
                 return (
-                    <button type="button" key={starValue} className="transition-transform hover:scale-110" onClick={() => setRating(starValue)} onMouseEnter={() => setHoverRating(starValue)} onMouseLeave={() => setHoverRating(0)} aria-label={`Calificar con ${starValue} estrellas`}>
-                        <StarIcon className="w-7 h-7 transition-colors" filled={(hoverRating || rating) >= starValue} />
+                    <button type="button" key={starValue} className="transition-transform hover:scale-110 px-0.5" onClick={() => setRating(starValue)} onMouseEnter={() => setHoverRating(starValue)} onMouseLeave={() => setHoverRating(0)} aria-label={`Calificar con ${starValue} estrellas`}>
+                        <StarIcon className="w-4 h-4 md:w-5 md:h-5 transition-colors" filled={(hoverRating || rating) >= starValue} />
                     </button>
                 );
             })}

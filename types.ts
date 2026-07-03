@@ -4,21 +4,83 @@ export interface Fuente {
   uri: string;
 }
 
+export interface FichaTecnica {
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  tieneAvisoPrivacidad?: boolean;
+  rfc?: string;
+  sitioWeb?: string;
+  redesSociales?: string[];
+  antiguedadDominio?: string;
+  antiguedadReclamada?: string;
+  alertaAntiguedad?: string;
+  websiteScreenshot?: string;
+  analisisVisual?: string;
+  equipoDirectivoOculto?: boolean;
+}
+
 export interface Inmobiliaria {
   id: string; // Firestore document ID
   nombre: string;
-  score: number;
-  quejas: number;
-  contrato: boolean;
-  googleRating: number;
-  miembroAMPI: boolean;
-  antiguedad: number; // Changed from string to number
-  rfcStatus: string;
-  domicilio: boolean; // Changed from string to boolean
-  controversias: string;
+  score: number; // Veritas Score calculated at write time
+  quejas?: number;
+  googleRating?: number;
+  antiguedad?: number;
+  controversias?: string;
   fuentes?: Fuente[];
+  indiceConfianza?: number; // Social rating calculated at write time
+  ratingAvg?: number; // Cached rating average
+  ratingCount?: number; // Cached rating count
+  contrato: boolean;
+  miembroAMPI: boolean;
+  rfcStatus: 'activo' | 'inactivo' | 'desconocido' | string;
+  domicilio: boolean; // Changed from string to boolean
   estado: string; // New field for state filtering
   imageUrl?: string; // New field for agency image URL
+  imageUrls?: string[]; // Transient field for base64 web screenshots
+  googleStatus?: 'verificado' | 'no_existe' | 'confuso';
+  websiteScreenshotsUrls?: string[];
+  driveFolderId?: string;
+  evidenciasProfeco?: Array<{ driveFileId?: string, fileUrl?: string, extracto: string }>;
+  dictamenProfeco?: {
+    anosDetectados: string;
+    totalQuejas: number;
+    tasaResolucion: string;
+    motivosPrincipales: string[];
+    veredictoEnganche: string;
+  };
+  reporteBanderasRojas?: string;
+  urlProfeco?: string;
+  evidenciasGoogle?: Array<{ driveFileId?: string, fileUrl?: string, extracto: string, tipo: 'rating' | 'comentario' }>;
+  controversiasWebUrls?: string[];
+  fichaTecnica?: FichaTecnica;
+  evidenciasSociales?: Array<{ 
+    redSocial: string, 
+    fileUrl: string, 
+    esPostPrincipal: boolean, 
+    resenaGenerada: Partial<Resena>,
+    replies?: Array<{
+        redSocial: string,
+        fileUrl: string,
+        resenaGenerada: Partial<Resena>
+    }>
+  }>;
+  mencionesWeb?: Array<{
+    id: string;
+    url: string;
+    titular: string;
+    resumen: string;
+    tono: 'Positivo' | 'Negativo' | 'Neutral';
+    severidad: number;
+    tituloOriginal?: string;
+  }>;
+}
+
+export interface CandidateLink {
+  title: string;
+  snippet: string;
+  url: string;
 }
 
 export interface Usuario {
@@ -63,10 +125,14 @@ export interface Resena {
   fecha: any; // Firestore Timestamp
   tieneEvidencia: boolean; // Indicates if user uploaded a file
   verificada: boolean; // Indicates if an admin has verified the evidence
+  inmobiliariaNombre?: string;
+  autorSimulado?: string;
+  textoExtracto?: string;
   likedBy?: string[]; // Array of user IDs who liked the review
   dislikedBy?: string[]; // Array of user IDs who disliked the review
   replies?: Reply[]; // Array of replies
   estado?: 'pendiente' | 'publicada';
+  redSocialOrigen?: string; // If this review was extracted from social media (e.g. Facebook)
 }
 
 export interface BlogPost {

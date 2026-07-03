@@ -94,7 +94,7 @@ function calculateSocialVerdict(agency: any, reviews: any[]): number {
 // 1. Vigilante de Reseñas: Se ejecuta cuando se crea, edita o borra una reseña
 export const onResenaWritten = functions.firestore
     .document('resenas/{resenaId}')
-    .onWrite(async (change, context) => {
+    .onWrite(async (change: any, context: any) => {
         const resena = change.after.exists ? change.after.data() : change.before.data();
         if (!resena || !resena.inmobiliariaId) return null;
 
@@ -164,7 +164,7 @@ export const onResenaWritten = functions.firestore
 // 2. Vigilante de Inmobiliarias: Se ejecuta cuando cambian los datos de una inmobiliaria
 export const onInmobiliariaWritten = functions.firestore
     .document('inmobiliarias/{inmobiliariaId}')
-    .onWrite(async (change, context) => {
+    .onWrite(async (change: any, context: any) => {
         // Si el documento fue borrado, no hacemos nada
         if (!change.after.exists) return null;
 

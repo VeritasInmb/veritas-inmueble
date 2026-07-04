@@ -137,6 +137,7 @@ export interface Resena {
   estado?: 'pendiente' | 'publicada';
   redSocialOrigen?: string; // If this review was extracted from social media (e.g. Facebook)
   rolPublico?: string; // e.g. "Usuario Anonimizado", "Propietario"
+  rol?: string;
 }
 
 export interface BlogPost {

@@ -112,13 +112,19 @@ const ForumRightPanel: React.FC = () => {
     );
 };
 
-const TopicCard: React.FC<{ topic: ForumTopic; onClick: () => void; onDelete: (id: string) => void; currentUser: Usuario | null; onLike: (id: string) => void; }> = ({ topic, onClick, onDelete, currentUser, onLike }) => {
+const TopicCard: React.FC<{ topic: ForumTopic; onClick: () => void; onDelete: (id: string) => void; currentUser: Usuario | null; onLike: (id: string) => void; isTop?: boolean; isCarousel?: boolean }> = ({ topic, onClick, onDelete, currentUser, onLike, isTop = false, isCarousel = false }) => {
     const formatDate = (t: any) => t instanceof Timestamp ? t.toDate().toLocaleDateString('es-MX') : 'Reciente';
     const canDelete = currentUser && (currentUser.id === topic.userId || currentUser.rol === 'admin');
     const hasLiked = currentUser ? topic.likes?.includes(currentUser.id) : false;
 
+    const bgClass = isTop ? 'bg-gradient-to-br from-white to-red-50/50 border-red-100' : 'bg-white border-slate-100';
+    const carouselClass = isCarousel ? 'min-w-[300px] md:min-w-[380px] max-w-[300px] md:max-w-[380px] snap-center shrink-0' : '';
+
     return (
-        <div onClick={onClick} className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 hover:shadow-card-hover transition-all cursor-pointer hover:-translate-y-1 group flex flex-col h-full relative">
+        <div onClick={onClick} className={`${bgClass} ${carouselClass} p-5 sm:p-6 rounded-3xl border hover:shadow-card-hover transition-all cursor-pointer hover:-translate-y-1 group flex flex-col h-full relative overflow-hidden`}>
+            {isTop && (
+                <div className="absolute top-0 right-0 w-32 h-32 bg-red-600 rounded-full filter blur-[60px] opacity-10 pointer-events-none -z-10 translate-x-1/2 -translate-y-1/2"></div>
+            )}
             <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                     <UserAvatar 
@@ -130,18 +136,25 @@ const TopicCard: React.FC<{ topic: ForumTopic; onClick: () => void; onDelete: (i
                     />
                     <div><p className="text-sm font-bold text-slate-900">{topic.authorName}</p><p className="text-xs text-slate-400">{formatDate(topic.createdAt)}</p></div>
                 </div>
-                {canDelete && (
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(topic.id); }} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition z-10">
-                        <TrashIcon className="w-4 h-4" />
-                    </button>
-                )}
+                <div className="flex flex-col gap-2 items-end z-10">
+                    {isTop && (
+                        <span className="font-bold uppercase tracking-widest text-red-600 bg-red-100 px-2 py-0.5 rounded-full text-[9px] flex items-center gap-1 shrink-0">
+                            🔥 Tendencia
+                        </span>
+                    )}
+                    {canDelete && (
+                        <button onClick={(e) => { e.stopPropagation(); onDelete(topic.id); }} className="text-slate-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition">
+                            <TrashIcon className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
             </div>
-            <h3 className="font-black text-xl text-slate-900 mb-3 leading-snug group-hover:text-red-600 transition-colors">{topic.title}</h3>
-            <p className="text-slate-500 line-clamp-5 mb-6 leading-relaxed flex-1">{topic.content}</p>
-            <div className="flex flex-wrap gap-2 mb-6">
-                {topic.tags?.map(tag => <span key={tag} className="text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-full">#{tag}</span>)}
+            <h3 className="font-black text-xl text-slate-900 mb-2 leading-tight group-hover:text-red-600 transition-colors">{topic.title}</h3>
+            <p className={`text-slate-500 mb-5 leading-relaxed flex-1 ${isCarousel ? 'line-clamp-3 text-sm' : 'line-clamp-4 text-sm'}`}>{topic.content}</p>
+            <div className="flex flex-wrap gap-2 mb-5">
+                {topic.tags?.map(tag => <span key={tag} className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">#{tag}</span>)}
             </div>
-            <div className="flex items-center gap-5 pt-3 border-t border-slate-50 text-slate-400 text-sm font-medium mt-auto">
+            <div className="flex items-center gap-4 pt-3 border-t border-slate-100/60 text-slate-400 text-sm font-medium mt-auto">
                 <button onClick={(e) => { e.stopPropagation(); onLike(topic.id); }} className={`flex items-center gap-1.5 transition-colors ${hasLiked ? 'text-red-500' : 'hover:text-red-500'}`} aria-label="Me gusta">
                     <HeartIcon className="w-4 h-4" filled={hasLiked} /> {topic.likes?.length || 0}
                 </button>
@@ -152,11 +165,12 @@ const TopicCard: React.FC<{ topic: ForumTopic; onClick: () => void; onDelete: (i
     );
 };
 
-const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (title: string, content: string, categoryId: string, tags: string) => Promise<void>; categories: ForumCategory[]; activeCategory: string; }> = ({ isOpen, onClose, onSave, categories, activeCategory }) => {
+const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (title: string, content: string, categoryId: string, tags: string, isAnonymous: boolean) => Promise<void>; categories: ForumCategory[]; activeCategory: string; }> = ({ isOpen, onClose, onSave, categories, activeCategory }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [categoryId, setCategoryId] = useState(activeCategory || (categories[0]?.id ?? ''));
     const [tags, setTags] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -169,9 +183,9 @@ const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
         }
 
         setIsSubmitting(true);
-        await onSave(title, content, categoryId, tags);
+        await onSave(title, content, categoryId, tags, isAnonymous);
         setIsSubmitting(false);
-        setTitle(''); setContent(''); setTags('');
+        setTitle(''); setContent(''); setTags(''); setIsAnonymous(false);
         onClose();
     };
 
@@ -180,7 +194,7 @@ const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-2xl max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-black text-slate-900">Crear Nuevo Tema</h3>
                     <button onClick={onClose} className="bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition"><CloseIcon className="w-5 h-5 text-slate-500" /></button>
@@ -198,13 +212,22 @@ const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Contenido</label>
-                        <textarea value={content} onChange={(e) => setContent(e.target.value)} required rows={6} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-red-500 transition" placeholder="Comparte tus ideas, dudas o experiencias..." />
+                        <textarea value={content} onChange={(e) => setContent(e.target.value)} required rows={5} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-red-500 transition" placeholder="Comparte tus ideas, dudas o experiencias..." />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Tags (separados por comas)</label>
                         <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-red-500 transition" placeholder="renta, contrato, profeco" />
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <input type="checkbox" id="anon-checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} className="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-slate-300" />
+                        <label htmlFor="anon-checkbox" className="flex-1 cursor-pointer">
+                            <span className="block text-sm font-bold text-slate-900">🕵️ Publicar como Anónimo</span>
+                            <span className="block text-[10px] text-slate-500">Tu identidad real se mantendrá oculta al público ("Usuario Anónimo").</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" disabled={isSubmitting} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
                         {isSubmitting && <SpinnerIcon className="w-5 h-5" />} {isSubmitting ? 'Publicando...' : 'Publicar Tema'}
                     </button>
                 </form>
@@ -213,9 +236,10 @@ const CreateTopicModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
     );
 };
 
-const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void; replies: ForumReply[]; onReplySubmit: (content: string) => Promise<void>; currentUser: Usuario | null; onDeleteTopic: (id: string) => void; onDeleteReply: (id: string) => void; onLikeTopic: (id: string) => void; onRequireAuth: () => void; }> = ({ topic, onClose, replies, onReplySubmit, currentUser, onDeleteTopic, onDeleteReply, onLikeTopic, onRequireAuth }) => {
+const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void; replies: ForumReply[]; onReplySubmit: (content: string, isAnonymous: boolean) => Promise<void>; currentUser: Usuario | null; onDeleteTopic: (id: string) => void; onDeleteReply: (id: string) => void; onLikeTopic: (id: string) => void; onRequireAuth: () => void; }> = ({ topic, onClose, replies, onReplySubmit, currentUser, onDeleteTopic, onDeleteReply, onLikeTopic, onRequireAuth }) => {
     const router = useRouter();
     const [newReply, setNewReply] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const repliesEndRef = useRef<HTMLDivElement>(null);
 
@@ -229,9 +253,10 @@ const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void
         }
 
         setIsSubmitting(true);
-        await onReplySubmit(newReply);
+        await onReplySubmit(newReply, isAnonymous);
         setIsSubmitting(false);
         setNewReply('');
+        setIsAnonymous(false);
     };
     useEffect(() => { if (repliesEndRef.current) repliesEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [replies]);
     if (!topic) return null;
@@ -309,7 +334,7 @@ const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void
                         <div ref={repliesEndRef} />
                     </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4">
+                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 md:p-4">
                     <div className="flex gap-2">
                         <textarea value={newReply} onChange={(e) => setNewReply(e.target.value)} placeholder="Escribe tu respuesta..." className="flex-1 px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-red-500 transition resize-none h-24" />
                         <div className="flex flex-col gap-2">
@@ -324,6 +349,12 @@ const TopicDetailModal: React.FC<{ topic: ForumTopic | null; onClose: () => void
                             )}
                         </div>
                     </div>
+                    {currentUser && (
+                        <div className="mt-2 flex items-center gap-2 px-1">
+                            <input type="checkbox" id="anon-reply" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-slate-300" />
+                            <label htmlFor="anon-reply" className="text-xs font-medium text-slate-500 cursor-pointer">Responder como "Usuario Anónimo"</label>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -349,6 +380,64 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
     const [forumSearch, setForumSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState<{ type: 'topic' | 'reply', id: string } | null>(null);
+    const [activeCarouselSlide, setActiveCarouselSlide] = useState(0);
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [startScrollLeft, setStartScrollLeft] = useState(0);
+    const wasDragged = useRef(false);
+    const isHovered = useRef(false);
+    const requestRef = useRef<number>();
+
+    const handleCarouselScroll = () => {
+        if (!carouselRef.current) return;
+        const container = carouselRef.current;
+        let closestIndex = 0;
+        let minDistance = Infinity;
+        const containerCenter = container.getBoundingClientRect().left + container.getBoundingClientRect().width / 2;
+        
+        Array.from(container.children).forEach((child, index) => {
+            const childRect = child.getBoundingClientRect();
+            const childCenter = childRect.left + childRect.width / 2;
+            const distance = Math.abs(childCenter - containerCenter);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestIndex = index;
+            }
+        });
+        setActiveCarouselSlide(closestIndex);
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!carouselRef.current) return;
+        setIsDragging(true);
+        wasDragged.current = false;
+        setStartX(e.pageX - carouselRef.current.offsetLeft);
+        setStartScrollLeft(carouselRef.current.scrollLeft);
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+        isHovered.current = false;
+    };
+
+    const handleMouseEnter = () => {
+        isHovered.current = true;
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        setTimeout(() => { wasDragged.current = false; }, 50);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !carouselRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - carouselRef.current.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        if (Math.abs(walk) > 5) wasDragged.current = true;
+        carouselRef.current.scrollLeft = startScrollLeft - walk;
+    };
 
     // Fetch Forum Topics
     useEffect(() => {
@@ -371,9 +460,43 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
         { id: 'cat_legal', name: 'Legal & Créditos', iconName: 'Scale' },
     ], []);
 
-    const filteredTopics = useMemo(() => {
-        return forumTopics.filter(t => (activeCategory === 'cat_gral' || t.categoryId === activeCategory) && t.title.toLowerCase().includes(forumSearch.toLowerCase()));
+    const { topTopics, regularTopics } = useMemo(() => {
+        const baseTopics = forumTopics.filter(t => (activeCategory === 'cat_gral' || t.categoryId === activeCategory) && t.title.toLowerCase().includes(forumSearch.toLowerCase()));
+        
+        if (!forumSearch && baseTopics.length > 0 && activeCategory === 'cat_gral') {
+            const sortedByScore = [...baseTopics].sort((a,b) => {
+                const scoreA = ((a.likes?.length || 0) * 2) + (a.replyCount || 0);
+                const scoreB = ((b.likes?.length || 0) * 2) + (b.replyCount || 0);
+                return scoreB - scoreA;
+            });
+            
+            const topN = sortedByScore.slice(0, 10);
+            const topNIds = topN.map(t => t.id);
+            const rest = baseTopics.filter(t => !topNIds.includes(t.id));
+            
+            return { topTopics: topN, regularTopics: rest };
+        }
+        return { topTopics: [], regularTopics: baseTopics };
     }, [forumTopics, activeCategory, forumSearch]);
+
+    useEffect(() => {
+        if (topTopics.length <= 1) return;
+        const smoothScroll = () => {
+            if (carouselRef.current && !isDragging && !isHovered.current) {
+                const container = carouselRef.current;
+                container.scrollLeft += 0.5;
+
+                if (container.scrollLeft >= container.scrollWidth - container.clientWidth - 1) {
+                    container.scrollLeft = 0;
+                }
+            }
+            requestRef.current = requestAnimationFrame(smoothScroll);
+        };
+        requestRef.current = requestAnimationFrame(smoothScroll);
+        return () => {
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, [topTopics.length, isDragging]);
 
     // Ensure current selected topic always reflects real-time data
     const currentSelectedTopic = useMemo(() => {
@@ -382,11 +505,18 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
 
     useEffect(() => {
         if (!currentSelectedTopic) { setTopicReplies([]); return; }
-        const unsubscribe = db.collection('forum_replies').where('topicId', '==', currentSelectedTopic.id).orderBy('createdAt', 'asc').onSnapshot(snapshot => {
-            setTopicReplies(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ForumReply)));
-        });
+        const unsubscribe = db.collection('forum_replies').where('topicId', '==', currentSelectedTopic.id).onSnapshot(snapshot => {
+            const repliesData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ForumReply));
+            // Ordenar localmente para evitar requerir un índice compuesto en Firestore
+            repliesData.sort((a, b) => {
+                const timeA = typeof a.createdAt?.toDate === 'function' ? a.createdAt.toDate().getTime() : Date.now();
+                const timeB = typeof b.createdAt?.toDate === 'function' ? b.createdAt.toDate().getTime() : Date.now();
+                return timeA - timeB;
+            });
+            setTopicReplies(repliesData);
+        }, (error) => console.error("Error fetching replies:", error));
         return () => unsubscribe();
-    }, [currentSelectedTopic]);
+    }, [currentSelectedTopic?.id]);
 
     const handleCreateTopicClick = () => {
         if (!currentUser) {
@@ -396,7 +526,7 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
         setIsCreateTopicOpen(true);
     };
 
-    const handleCreateTopic = async (title: string, content: string, categoryId: string, tagsString: string) => {
+    const handleCreateTopic = async (title: string, content: string, categoryId: string, tagsString: string, isAnonymous: boolean) => {
         if (!currentUser) return;
         const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
         await db.collection('forum_topics').add({
@@ -405,9 +535,9 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
             categoryId, 
             tags, 
             userId: currentUser.id, 
-            authorName: currentUser.nombre, 
-            authorAvatar: currentUser.avatarUrl || '',
-            authorColor: currentUser.profileColor || '',
+            authorName: isAnonymous ? 'Usuario Anónimo' : currentUser.nombre, 
+            authorAvatar: isAnonymous ? '' : (currentUser.avatarUrl || ''),
+            authorColor: isAnonymous ? 'bg-slate-500' : (currentUser.profileColor || ''),
             createdAt: firebase.firestore.FieldValue.serverTimestamp(), 
             likes: [], 
             replyCount: 0, 
@@ -415,15 +545,15 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
         });
     };
 
-    const handleCreateReply = async (content: string) => {
+    const handleCreateReply = async (content: string, isAnonymous: boolean) => {
         if (!currentUser || !currentSelectedTopic) return;
         await db.collection('forum_replies').add({ 
             topicId: currentSelectedTopic.id, 
             content, 
             userId: currentUser.id, 
-            authorName: currentUser.nombre, 
-            authorAvatar: currentUser.avatarUrl || '',
-            authorColor: currentUser.profileColor || '',
+            authorName: isAnonymous ? 'Usuario Anónimo' : currentUser.nombre, 
+            authorAvatar: isAnonymous ? '' : (currentUser.avatarUrl || ''),
+            authorColor: isAnonymous ? 'bg-slate-500' : (currentUser.profileColor || ''),
             createdAt: firebase.firestore.FieldValue.serverTimestamp(), 
             likes: [] 
         });
@@ -519,18 +649,89 @@ export const Forum: React.FC<ForumProps> = ({ currentUser, createNotification, s
                         );
                     })}
                 </div>
-                <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
-                        {isLoading ? (
-                            <div className="col-span-full text-center py-12"><SpinnerIcon className="w-8 h-8 animate-spin mx-auto text-slate-400"/></div>
-                        ) : filteredTopics.length > 0 ? (
-                            filteredTopics.map(topic => <TopicCard key={topic.id} topic={topic} onClick={() => handleSelectTopic(topic)} onDelete={onDeleteTopic} currentUser={currentUser} onLike={handleLikeTopic} />)
-                        ) : (
-                            <div className="col-span-full text-center py-12 text-slate-500 font-medium">
-                                No hay temas aquí aún. ¡Sé el primero!
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50">
+                    {isLoading ? (
+                        <div className="text-center py-12"><SpinnerIcon className="w-8 h-8 animate-spin mx-auto text-slate-400"/></div>
+                    ) : (topTopics.length > 0 || regularTopics.length > 0) ? (
+                        <>
+                            {topTopics.length > 0 && (
+                                <div className="mb-8">
+                                    <h2 className="text-lg md:text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
+                                        🔥 Tendencias
+                                    </h2>
+                                    <div 
+                                        ref={carouselRef}
+                                        onScroll={handleCarouselScroll}
+                                        onMouseDown={handleMouseDown}
+                                        onMouseLeave={handleMouseLeave}
+                                        onMouseEnter={handleMouseEnter}
+                                        onMouseUp={handleMouseUp}
+                                        onMouseMove={handleMouseMove}
+                                        className={`flex overflow-x-auto pb-4 gap-4 no-scrollbar select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                    >
+                                        {topTopics.map(topic => (
+                                            <TopicCard 
+                                                key={topic.id} 
+                                                topic={topic} 
+                                                onClick={() => { if (!wasDragged.current) handleSelectTopic(topic); }} 
+                                                onDelete={onDeleteTopic} 
+                                                currentUser={currentUser} 
+                                                onLike={handleLikeTopic} 
+                                                isTop={true} 
+                                                isCarousel={true}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-center gap-2 mt-2">
+                                        {topTopics.map((_, idx) => (
+                                            <button 
+                                                key={idx}
+                                                className={`h-2.5 rounded-full transition-all duration-300 ${activeCarouselSlide === idx ? 'bg-red-600 w-8' : 'bg-red-200 w-2.5 hover:bg-red-300'}`}
+                                                aria-label={`Ir a tendencia ${idx + 1}`}
+                                                onClick={() => {
+                                                    if(carouselRef.current) {
+                                                        const container = carouselRef.current;
+                                                        const child = container.children[idx] as HTMLElement;
+                                                        if(child) {
+                                                            const childRect = child.getBoundingClientRect();
+                                                            const containerRect = container.getBoundingClientRect();
+                                                            const relativeLeft = childRect.left - containerRect.left;
+                                                            const absoluteScrollLeft = container.scrollLeft + relativeLeft;
+                                                            const targetScrollLeft = absoluteScrollLeft - (container.clientWidth - childRect.width) / 2;
+                                                            
+                                                            container.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div>
+                                {topTopics.length > 0 && <h2 className="text-lg md:text-xl font-black text-slate-900 mb-4">Todos los temas</h2>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                                    {regularTopics.map((topic) => (
+                                        <TopicCard 
+                                            key={topic.id} 
+                                            topic={topic} 
+                                            onClick={() => handleSelectTopic(topic)} 
+                                            onDelete={onDeleteTopic} 
+                                            currentUser={currentUser} 
+                                            onLike={handleLikeTopic} 
+                                            isTop={false} 
+                                            isCarousel={false}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        )}
-                    </div>
+                        </>
+                    ) : (
+                        <div className="text-center py-12 text-slate-500 font-medium">
+                            No hay temas aquí aún. ¡Sé el primero!
+                        </div>
+                    )}
                 </div>
             </main>
             <ForumRightPanel />

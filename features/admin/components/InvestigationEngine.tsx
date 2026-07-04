@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Inmobiliaria } from '../../../types';
 import { SpinnerIcon, SearchIcon, UploadIcon, CheckCircleIcon, ShieldCheckIcon, GlobeIcon, MapPinIcon, DocumentIcon } from '../../../components/Icons';
 import { storage } from '../../../services/firebase';
@@ -29,6 +29,8 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
     const [selectedSocialIds, setSelectedSocialIds] = useState<string[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<any>({});
+    const [socialPreviews, setSocialPreviews] = useState<{file: File, url: string}[]>([]);
+    const [draggingId, setDraggingId] = useState<string | null>(null);
 
     // News Scraping States
     
@@ -50,14 +52,34 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
             });
             const data = await res.json();
             
-            setAgencyData(prev => ({
-                ...prev,
-                nombre: data.nombre || prev.nombre,
-                imageUrl: data.imageUrl || prev.imageUrl,
-                imageUrls: data.imageUrls || [],
-                reporteBanderasRojas: data.reporteBanderasRojas || '',
-                fichaTecnica: data.fichaTecnica || prev.fichaTecnica
-            }));
+            setAgencyData(prev => {
+                let inferredYears = prev.antiguedad || 0;
+                if (!inferredYears && data.fichaTecnica?.antiguedadDominio) {
+                    const domainAge = data.fichaTecnica.antiguedadDominio.toLowerCase();
+                    const matchYears = domainAge.match(/(\d+)\s*(año|year)/i);
+                    if (matchYears) {
+                        inferredYears = parseInt(matchYears[1]);
+                    } else if (domainAge.includes('mes') || domainAge.includes('month') || domainAge.includes('día') || domainAge.includes('day')) {
+                        inferredYears = 1;
+                    } else if (!isNaN(Date.parse(domainAge))) {
+                        const creationDate = new Date(domainAge);
+                        const ageDifMs = Date.now() - creationDate.getTime();
+                        const ageDate = new Date(ageDifMs);
+                        const years = Math.abs(ageDate.getUTCFullYear() - 1970);
+                        inferredYears = years > 0 ? years : 1;
+                    }
+                }
+
+                return {
+                    ...prev,
+                    nombre: data.nombre || prev.nombre,
+                    imageUrl: data.imageUrl || prev.imageUrl,
+                    imageUrls: data.imageUrls || [],
+                    reporteBanderasRojas: data.reporteBanderasRojas || '',
+                    fichaTecnica: data.fichaTecnica || prev.fichaTecnica,
+                    antiguedad: inferredYears
+                };
+            });
         } catch (error) {
             console.error(error);
             alert("Error al extraer datos. Verifica que la URL sea válida.");
@@ -146,6 +168,10 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
 
     const handleAddProfecoImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
+        handleAddProfecoFiles(files);
+    };
+
+    const handleAddProfecoFiles = async (files: File[]) => {
         if (files.length === 0) return;
 
         for (const file of files) {
@@ -162,6 +188,10 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                 url: base64
             }]);
         }
+    };
+
+    const handleDeleteProfecoPreview = (index: number) => {
+        setProfecoPreviews(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleProcessProfecoHistory = async () => {
@@ -252,18 +282,34 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
 
     const handleSocialMediaAnalyze = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        if (files.length === 0) return;
+        processSocialMediaFiles(files);
+    };
 
+    const processSocialMediaFiles = async (files: File[]) => {
+        if (files.length === 0) return;
+        const newPreviews: {file: File, url: string}[] = [];
+        for (const file of files) {
+            const reader = new FileReader();
+            const url = await new Promise<string>((resolve) => {
+                reader.onload = (ev) => resolve(ev.target?.result as string);
+                reader.readAsDataURL(file);
+            });
+            newPreviews.push({ file, url });
+        }
+        setSocialPreviews(prev => [...prev, ...newPreviews]);
+    };
+
+    const handleDeleteSocialPreview = (index: number) => {
+        setSocialPreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleAnalyzeSocialPreviews = async () => {
+        if (socialPreviews.length === 0) return;
         setIsLoading(true);
         try {
-            for (const file of files) {
-                const reader = new FileReader();
-                const base64Promise = new Promise<string>((resolve) => {
-                    reader.onload = (ev) => resolve(ev.target?.result as string);
-                });
-                reader.readAsDataURL(file);
-                const base64 = await base64Promise;
-
+            for (const preview of socialPreviews) {
+                const base64 = preview.url;
+                
                 const filename = `social_${Date.now()}`;
                 const agencyFolder = agencyData.nombre ? agencyData.nombre.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'desconocida';
                 const storageRef = storage.ref(`evidencias/${agencyFolder}/${filename}`);
@@ -288,7 +334,8 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                             resenaGenerada: {
                                 autorSimulado: item.autorSimulado,
                                 textoExtracto: item.textoExtracto,
-                                calificacion: item.calificacion
+                                calificacion: item.calificacion,
+                                rol: item.rol || 'Usuario Anonimizado'
                             },
                             replies: item.respuestas ? item.respuestas.map((r: any) => ({
                                 id: Math.random().toString(36).substring(7),
@@ -299,7 +346,8 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                 resenaGenerada: {
                                     autorSimulado: r.autorSimulado,
                                     textoExtracto: r.textoExtracto,
-                                    calificacion: r.calificacion
+                                    calificacion: r.calificacion,
+                                    rol: r.rol || 'Usuario Anonimizado'
                                 },
                                 replies: []
                             })) : []
@@ -311,21 +359,19 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                             fileUrl: downloadUrl,
                             esPostPrincipal: result.data.tipo === 'post',
                             fechaStr: result.data.fechaStr || 'SIN FECHA',
-                            resenaGenerada: result.data,
+                            resenaGenerada: { ...result.data, rol: result.data.rol || 'Usuario Anonimizado' },
                             replies: []
                         }];
                     }
                     
                     setSocialCandidates(prev => [...prev, ...newCandidates]);
-                    // Auto-select all by default
-                    setSelectedSocialIds(prev => [
-                        ...prev,
-                        ...newCandidates.map(c => c.id)
-                    ]);
+                    setSelectedSocialIds(prev => [...prev, ...newCandidates.map(c => c.id)]);
                 }
             }
+            setSocialPreviews([]); // Clean up after processing
         } catch (error) {
             console.error(error);
+            alert("Error al extraer información de la red social.");
         } finally {
             setIsLoading(false);
         }
@@ -369,23 +415,24 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
     };
 
     const onDragEnd = (result: DropResult) => {
-        const { source, destination, draggableId } = result;
-
+        setDraggingId(null);
+        const { source, destination } = result;
         if (!destination) return;
         if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
+        let newList = [...socialCandidates];
+        let draggedItem: any;
+
         const sourceDroppableId = source.droppableId;
         const destDroppableId = destination.droppableId;
-
-        let draggedItem: any;
-        let newList = [...socialCandidates];
-
+        
         // 1. Encontrar y remover el item de la fuente
         if (sourceDroppableId === 'ROOT') {
             draggedItem = newList[source.index];
             newList.splice(source.index, 1);
         } else {
-            const parentIdx = newList.findIndex(c => c.id === sourceDroppableId);
+            const parentId = sourceDroppableId.replace('reply-dropzone-', '');
+            const parentIdx = newList.findIndex(c => c.id === parentId);
             if (parentIdx !== -1 && newList[parentIdx].replies) {
                 draggedItem = newList[parentIdx].replies[source.index];
                 newList[parentIdx] = { ...newList[parentIdx], replies: [...newList[parentIdx].replies] };
@@ -395,16 +442,31 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
 
         if (!draggedItem) return;
 
-        // 2. Insertar en el destino y actualizar tipo
+        // 2. Insertar en el destino (comportamiento normal)
         if (destDroppableId === 'ROOT') {
             draggedItem.esPostPrincipal = true;
             newList.splice(destination.index, 0, draggedItem);
         } else {
-            draggedItem.esPostPrincipal = false;
-            const parentIdx = newList.findIndex(c => c.id === destDroppableId);
+            const parentId = destDroppableId.replace('reply-dropzone-', '');
+            const parentIdx = newList.findIndex(c => c.id === parentId);
             if (parentIdx !== -1) {
+                // APLANAMIENTO (FLATTENING)
+                let flattenedReplies: any[] = [];
+                if (draggedItem.replies && draggedItem.replies.length > 0) {
+                    flattenedReplies = draggedItem.replies;
+                    draggedItem.replies = [];
+                }
+                draggedItem.esPostPrincipal = false;
+
                 newList[parentIdx] = { ...newList[parentIdx], replies: [...(newList[parentIdx].replies || [])] };
+                // Insertar el item principal en la posicion de drop
                 newList[parentIdx].replies.splice(destination.index, 0, draggedItem);
+                
+                // Insertar los comentarios aplanados inmediatamente despues
+                if (flattenedReplies.length > 0) {
+                    const formattedFlattened = flattenedReplies.map((r: any) => ({...r, esPostPrincipal: false}));
+                    newList[parentIdx].replies.splice(destination.index + 1, 0, ...formattedFlattened);
+                }
             } else {
                 newList.push(draggedItem);
             }
@@ -440,7 +502,8 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
         setEditForm({
             autorSimulado: item.resenaGenerada.autorSimulado,
             textoExtracto: item.resenaGenerada.textoExtracto,
-            calificacion: item.resenaGenerada.calificacion
+            calificacion: item.resenaGenerada.calificacion,
+            rol: item.resenaGenerada.rol || 'Usuario Anonimizado'
         });
     };
 
@@ -459,6 +522,26 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
         }));
         setEditingId(null);
     };
+
+    useEffect(() => {
+        const handleGlobalPaste = (e: ClipboardEvent) => {
+            if (currentStep !== 2 && currentStep !== 3) return; // Sólo en Profeco o Redes Sociales
+            if (isLoading) return; // Prevenir múltiples llamadas si ya está cargando
+            
+            const files = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) {
+                e.preventDefault();
+                if (currentStep === 2) {
+                    handleAddProfecoFiles(files);
+                } else if (currentStep === 3) {
+                    processSocialMediaFiles(files);
+                }
+            }
+        };
+
+        window.addEventListener('paste', handleGlobalPaste);
+        return () => window.removeEventListener('paste', handleGlobalPaste);
+    }, [currentStep, agencyData, socialNetwork, isLoading]);
 
     const handleSaveSocialEvidence = () => {
         if (selectedSocialIds.length === 0) return alert("Selecciona al menos un elemento.");
@@ -581,6 +664,7 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                     
                     <div className="bg-slate-50 p-4 rounded-xl space-y-4">
                         <div><label className="text-xs font-bold text-slate-500">Nombre Oficial</label><input type="text" value={agencyData.nombre || ''} onChange={e => setAgencyData({...agencyData, nombre: e.target.value})} className="w-full p-2 border rounded-lg mt-1"/></div>
+                        <div><label className="text-xs font-bold text-slate-500">Años de Antigüedad (Manual)</label><input type="number" min="0" value={agencyData.antiguedad || ''} onChange={e => setAgencyData({...agencyData, antiguedad: parseInt(e.target.value) || 0})} placeholder="Ej. 5 (Deja vacío para auto-calcular)" className="w-full p-2 border rounded-lg mt-1"/></div>
                         <div><label className="text-xs font-bold text-slate-500">Logo URL</label><input type="text" value={agencyData.imageUrl || ''} onChange={e => setAgencyData({...agencyData, imageUrl: e.target.value})} className="w-full p-2 border rounded-lg mt-1"/></div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 border-t pt-4">
@@ -674,26 +758,32 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                     <span className="text-xs text-slate-500 mt-2">Puedes subir imágenes de varios años juntas.</span>
                                 </label>
                             </div>
-
-                            {profecoPreviews.length > 0 && (
-                                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
-                                    <h4 className="font-bold text-slate-800 text-sm mb-3">Imágenes Listas para Analizar ({profecoPreviews.length}):</h4>
-                                    <div className="flex gap-4 overflow-x-auto pb-4">
-                                        {profecoPreviews.map((p, i) => (
-                                            <img key={i} src={p.url} alt={`Preview ${i}`} className="w-24 h-24 object-cover rounded-lg border border-slate-300 shadow-sm" />
-                                        ))}
-                                    </div>
-                                    <button 
-                                        onClick={handleProcessProfecoHistory} 
-                                        disabled={isLoading}
-                                        className="w-full py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition flex justify-center items-center gap-2"
-                                    >
-                                        {isLoading ? <SpinnerIcon className="w-5 h-5 animate-spin"/> : <ShieldCheckIcon className="w-5 h-5"/>}
-                                        Generar Reporte Profeco (IA)
-                                    </button>
-                                </div>
-                            )}
                         </>
+                    )}
+
+                    {profecoPreviews.length > 0 && (
+                        <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-800 text-sm mb-3 flex justify-between items-center">
+                                <span>Imágenes Listas para Analizar ({profecoPreviews.length}):</span>
+                                <button onClick={() => setProfecoPreviews([])} className="text-xs text-red-500 hover:text-red-700">Limpiar Todo</button>
+                            </h4>
+                            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                                {profecoPreviews.map((p, i) => (
+                                    <div key={i} className="relative group flex-shrink-0">
+                                        <img src={p.url} alt={`Preview ${i}`} className="w-24 h-24 object-cover rounded-lg border border-slate-300 shadow-sm" />
+                                        <button onClick={() => handleDeleteProfecoPreview(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs shadow-md opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                            <button 
+                                onClick={handleProcessProfecoHistory} 
+                                disabled={isLoading}
+                                className="w-full py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition flex justify-center items-center gap-2 mt-2"
+                            >
+                                {isLoading ? <SpinnerIcon className="w-5 h-5 animate-spin"/> : <ShieldCheckIcon className="w-5 h-5"/>}
+                                Generar Reporte Profeco (IA)
+                            </button>
+                        </div>
                     )}
 
                     {agencyData.dictamenProfeco && (
@@ -780,10 +870,35 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                         <div className="border-2 border-dashed border-pink-300 bg-white rounded-2xl p-8 text-center hover:bg-pink-50 transition">
                             <input type="file" id="social-upload" multiple className="hidden" onChange={handleSocialMediaAnalyze} accept="image/*" />
                             <label htmlFor="social-upload" className="cursor-pointer flex flex-col items-center">
-                                {isLoading ? <SpinnerIcon className="w-10 h-10 text-pink-400 animate-spin mb-4"/> : <UploadIcon className="w-10 h-10 text-pink-400 mb-4"/>}
-                                <span className="font-bold text-pink-700">Subir capturas de {socialNetwork}</span>
-                                <span className="text-xs text-slate-500 mt-2">La IA extraerá posts y comentarios automáticamente</span>
+                                <UploadIcon className="w-10 h-10 text-pink-400 mb-4"/>
+                                <span className="font-bold text-pink-700">Seleccionar capturas de {socialNetwork}</span>
+                                <span className="text-xs text-slate-500 mt-2">También puedes pegar imágenes directamente con Ctrl+V</span>
                             </label>
+                        </div>
+                    )}
+
+                    {socialPreviews.length > 0 && (
+                        <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-800 text-sm mb-3 flex justify-between items-center">
+                                <span>Capturas Listas para Extraer ({socialPreviews.length}):</span>
+                                <button onClick={() => setSocialPreviews([])} className="text-xs text-red-500 hover:text-red-700">Limpiar Todo</button>
+                            </h4>
+                            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                                {socialPreviews.map((p, i) => (
+                                    <div key={i} className="relative group flex-shrink-0">
+                                        <img src={p.url} alt={`Preview ${i}`} className="w-24 h-24 object-cover rounded-lg border border-slate-300 shadow-sm" />
+                                        <button onClick={() => handleDeleteSocialPreview(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs shadow-md opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                            <button 
+                                onClick={handleAnalyzeSocialPreviews} 
+                                disabled={isLoading}
+                                className="w-full py-3 bg-pink-600 text-white font-bold rounded-xl hover:bg-pink-700 transition flex justify-center items-center gap-2 mt-2"
+                            >
+                                {isLoading ? <SpinnerIcon className="w-5 h-5 animate-spin"/> : <SearchIcon className="w-5 h-5"/>}
+                                Analizar y Extraer Posts (IA)
+                            </button>
                         </div>
                     )}
 
@@ -810,7 +925,10 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                 </div>
                             </div>
                             
-                            <DragDropContext onDragEnd={onDragEnd}>
+                            <DragDropContext 
+                                onDragStart={(start) => setDraggingId(start.draggableId)}
+                                onDragEnd={onDragEnd}
+                            >
                                 <Droppable droppableId="ROOT" type="POST">
                                     {(provided, snapshot) => (
                                         <div 
@@ -848,14 +966,38 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <span className="font-bold text-slate-800 flex items-center gap-2">
                                                                             {editingId === c.id ? (
-                                                                                <input type="text" className="border rounded px-2 py-1 text-sm font-bold" value={editForm.autorSimulado} onChange={e => setEditForm({...editForm, autorSimulado: e.target.value})} />
-                                                                            ) : c.resenaGenerada.autorSimulado}
+                                                                                <div className="flex gap-2">
+                                                                                    <input type="text" className="border rounded px-2 py-1 text-sm font-bold w-24" value={editForm.autorSimulado} onChange={e => setEditForm({...editForm, autorSimulado: e.target.value})} />
+                                                                                    <select className="border rounded px-1 text-sm font-normal bg-white" value={editForm.rol || 'Usuario Anonimizado'} onChange={e => setEditForm({...editForm, rol: e.target.value})}>
+                                                                                        <option value="Usuario Anonimizado">Usuario Anonimizado</option>
+                                                                                        <option value="Inmobiliaria">Inmobiliaria</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <>
+                                                                                    {c.resenaGenerada.autorSimulado}
+                                                                                    <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded-md uppercase tracking-wider ${c.resenaGenerada.rol === 'Inmobiliaria' ? 'bg-blue-600' : 'bg-slate-400'}`}>
+                                                                                        {c.resenaGenerada.rol || 'Usuario Anonimizado'}
+                                                                                    </span>
+                                                                                </>
+                                                                            )}
                                                                             <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Vía {c.redSocial}</span>
                                                                         </span>
                                                                         <div className="flex items-center gap-3">
                                                                             {editingId === c.id ? (
-                                                                                <input type="number" min="1" max="5" className="w-12 border rounded px-1 text-sm" value={editForm.calificacion} onChange={e => setEditForm({...editForm, calificacion: parseInt(e.target.value)})} />
-                                                                            ) : <span className="text-yellow-500 font-bold">★ {c.resenaGenerada.calificacion}</span>}
+                                                                                <select className="border rounded px-1 text-sm bg-white" value={editForm.calificacion} onChange={e => setEditForm({...editForm, calificacion: parseInt(e.target.value)})}>
+                                                                                    <option value={0}>Neutro</option>
+                                                                                    <option value={1}>1 Estrella</option>
+                                                                                    <option value={2}>2 Estrellas</option>
+                                                                                    <option value={3}>3 Estrellas</option>
+                                                                                    <option value={4}>4 Estrellas</option>
+                                                                                    <option value={5}>5 Estrellas</option>
+                                                                                </select>
+                                                                            ) : (
+                                                                                c.resenaGenerada.calificacion === 0 
+                                                                                    ? <span className="text-slate-400 font-bold text-xs uppercase bg-slate-100 px-2 py-0.5 rounded-full">Neutro</span> 
+                                                                                    : <span className="text-yellow-500 font-bold">★ {c.resenaGenerada.calificacion}</span>
+                                                                            )}
                                                                             
                                                                             <div className="flex gap-1 ml-2 opacity-30 hover:opacity-100 transition">
                                                                                 {editingId === c.id ? (
@@ -872,20 +1014,36 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                                                     {editingId === c.id ? (
                                                                         <textarea className="w-full border rounded p-2 text-sm mt-2" rows={2} value={editForm.textoExtracto} onChange={e => setEditForm({...editForm, textoExtracto: e.target.value})} />
                                                                     ) : <p className="text-sm text-slate-600 italic mt-2">"{c.resenaGenerada.textoExtracto}"</p>}
+                                                                    
+                                                                    {/* Quick Action para anidar si falla D&D */}
+                                                                    {i > 0 && !snapshot.isDragging && (
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                const prevPost = socialCandidates[i-1];
+                                                                                const newList = [...socialCandidates];
+                                                                                const item = newList.splice(i, 1)[0];
+                                                                                item.esPostPrincipal = false;
+                                                                                newList[i-1] = { ...newList[i-1], replies: [...(newList[i-1].replies || []), item] };
+                                                                                setSocialCandidates(newList);
+                                                                            }}
+                                                                            className="text-xs text-pink-500 hover:text-pink-700 font-bold flex items-center gap-1 mt-2 opacity-0 hover:opacity-100 transition-opacity absolute bottom-2 right-2"
+                                                                            title="Anidar debajo del post anterior"
+                                                                        >
+                                                                            ↳ Anidar
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             </div>
 
                                                             {/* Nested Replies */}
-                                                            <Droppable droppableId={c.id} type="POST">
+                                                            <Droppable droppableId={`reply-dropzone-${c.id}`} type="POST" isDropDisabled={draggingId === c.id}>
                                                                 {(provided, snapshot) => (
                                                                     <div 
                                                                         {...provided.droppableProps}
                                                                         ref={provided.innerRef}
-                                                                        className={`border-t border-slate-100 p-4 pl-14 space-y-3 relative transition-colors ${(c.replies && c.replies.length > 0) || snapshot.isDraggingOver ? 'bg-slate-50' : 'bg-transparent pb-0 pt-0 border-transparent'} ${snapshot.isDraggingOver ? 'bg-pink-100 min-h-[60px]' : ''}`}
+                                                                        className="ml-4 pl-3 border-l-2 border-pink-100 space-y-2 mt-2 min-h-[50px]"
                                                                     >
-                                                                        {((c.replies && c.replies.length > 0) || snapshot.isDraggingOver) && (
-                                                                            <div className="absolute left-7 top-0 bottom-6 w-px bg-slate-300"></div>
-                                                                        )}
+                                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hilos Detectados</span>
                                                                         {c.replies && c.replies.map((reply: any, rIdx: number) => (
                                                                             <Draggable key={reply.id} draggableId={reply.id} index={rIdx}>
                                                                                 {(provided, snapshot) => (
@@ -895,19 +1053,42 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                                                                         style={provided.draggableProps.style}
                                                                                         className={`relative bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-start gap-3 hover:border-pink-300 transition ${snapshot.isDragging ? 'shadow-xl border-pink-500 z-50 scale-105' : ''}`}
                                                                                     >
-                                                                                        <div className="absolute -left-7 top-6 w-7 h-px bg-slate-300"></div>
                                                                                         <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-pink-500 pt-1 px-1" title="Arrastrar para desanidar">⋮⋮</div>
                                                                                         <div className="flex-1">
                                                                                             <div className="flex justify-between items-start mb-1">
                                                                                                 <span className="font-bold text-slate-700 text-sm flex items-center gap-2">
                                                                                                     {editingId === reply.id ? (
-                                                                                                        <input type="text" className="border rounded px-2 py-1 text-sm font-bold" value={editForm.autorSimulado} onChange={e => setEditForm({...editForm, autorSimulado: e.target.value})} />
-                                                                                                    ) : reply.resenaGenerada.autorSimulado}
+                                                                                                        <div className="flex gap-2">
+                                                                                                            <input type="text" className="border rounded px-2 py-1 text-sm font-bold w-24" value={editForm.autorSimulado} onChange={e => setEditForm({...editForm, autorSimulado: e.target.value})} />
+                                                                                                            <select className="border rounded px-1 text-xs font-normal bg-white" value={editForm.rol || 'Usuario Anonimizado'} onChange={e => setEditForm({...editForm, rol: e.target.value})}>
+                                                                                                                <option value="Usuario Anonimizado">Usuario Anonimizado</option>
+                                                                                                                <option value="Inmobiliaria">Inmobiliaria</option>
+                                                                                                            </select>
+                                                                                                        </div>
+                                                                                                    ) : (
+                                                                                                        <>
+                                                                                                            {reply.resenaGenerada.autorSimulado}
+                                                                                                            <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-md uppercase tracking-wider ${reply.resenaGenerada.rol === 'Inmobiliaria' ? 'bg-blue-600' : 'bg-slate-400'}`}>
+                                                                                                                {reply.resenaGenerada.rol || 'Usuario Anonimizado'}
+                                                                                                            </span>
+                                                                                                        </>
+                                                                                                    )}
                                                                                                 </span>
                                                                                                 <div className="flex items-center gap-2">
                                                                                                     {editingId === reply.id ? (
-                                                                                                        <input type="number" min="1" max="5" className="w-12 border rounded px-1 text-xs" value={editForm.calificacion} onChange={e => setEditForm({...editForm, calificacion: parseInt(e.target.value)})} />
-                                                                                                    ) : <span className="text-yellow-500 font-bold text-xs">★ {reply.resenaGenerada.calificacion}</span>}
+                                                                                                        <select className="border rounded px-1 text-xs bg-white" value={editForm.calificacion} onChange={e => setEditForm({...editForm, calificacion: parseInt(e.target.value)})}>
+                                                                                                            <option value={0}>Neutro</option>
+                                                                                                            <option value={1}>1 Estrella</option>
+                                                                                                            <option value={2}>2 Estrellas</option>
+                                                                                                            <option value={3}>3 Estrellas</option>
+                                                                                                            <option value={4}>4 Estrellas</option>
+                                                                                                            <option value={5}>5 Estrellas</option>
+                                                                                                        </select>
+                                                                                                    ) : (
+                                                                                                        reply.resenaGenerada.calificacion === 0 
+                                                                                                            ? <span className="text-slate-400 font-bold text-[10px] uppercase bg-slate-100 px-2 py-0.5 rounded-full">Neutro</span> 
+                                                                                                            : <span className="text-yellow-500 font-bold text-xs">★ {reply.resenaGenerada.calificacion}</span>
+                                                                                                    )}
                                                                                                     <div className="flex gap-1 ml-2 opacity-30 hover:opacity-100 transition">
                                                                                                         {editingId === reply.id ? (
                                                                                                             <button onClick={() => saveEditing(reply.id)} className="text-green-600 font-bold text-xs">OK</button>
@@ -957,12 +1138,17 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                         <div className="flex justify-between items-start mb-1">
                                             <span className="font-bold text-slate-800">
                                                 {ev.resenaGenerada.autorSimulado} 
+                                                <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded-md ml-2 uppercase tracking-wider ${ev.resenaGenerada.rol === 'Inmobiliaria' ? 'bg-blue-600' : 'bg-slate-400'}`}>
+                                                    {ev.resenaGenerada.rol || 'Usuario Anonimizado'}
+                                                </span>
                                                 <span className={`text-[10px] font-bold text-white px-2 py-0.5 rounded-md ml-2 uppercase tracking-wider ${ev.esPostPrincipal ? 'bg-indigo-600' : 'bg-slate-500'}`}>
                                                     {ev.esPostPrincipal ? 'POST' : 'COMENTARIO'}
                                                 </span>
                                                 <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full ml-1">Vía {ev.redSocial}</span>
                                             </span>
-                                            <span className="text-yellow-500 font-bold">★ {ev.resenaGenerada.calificacion}</span>
+                                            {ev.resenaGenerada.calificacion === 0 
+                                                ? <span className="text-slate-400 font-bold text-xs uppercase bg-slate-100 px-2 py-0.5 rounded-full">Neutro</span> 
+                                                : <span className="text-yellow-500 font-bold">★ {ev.resenaGenerada.calificacion}</span>}
                                         </div>
                                         <p className="text-sm text-slate-600 italic">"{ev.resenaGenerada.textoExtracto}"</p>
                                         
@@ -973,7 +1159,12 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                                     <div key={rIdx} className="bg-slate-50 p-2 rounded-lg text-sm flex gap-2">
                                                         <span className="text-slate-400">↳</span>
                                                         <div>
-                                                            <span className="font-bold text-slate-700">{reply.resenaGenerada.autorSimulado}: </span>
+                                                            <span className="font-bold text-slate-700">
+                                                                {reply.resenaGenerada.autorSimulado} 
+                                                                <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-md ml-1 uppercase tracking-wider ${reply.resenaGenerada.rol === 'Inmobiliaria' ? 'bg-blue-600' : 'bg-slate-400'}`}>
+                                                                    {reply.resenaGenerada.rol || 'Usuario Anonimizado'}
+                                                                </span>: 
+                                                            </span>
                                                             <span className="text-slate-600 italic">"{reply.resenaGenerada.textoExtracto}"</span>
                                                         </div>
                                                     </div>

@@ -199,15 +199,15 @@ export const ReviewList: React.FC<{ reviews: Resena[], isLoading: boolean, onVot
                 const hasDisliked = currentUser ? review.dislikedBy?.includes(currentUser.id) : false;
                 const canDeleteReview = canDelete(review.usuarioId);
                 return (
-                    <div key={review.id} className="bg-white p-3 md:p-4 rounded-xl md:rounded-2xl shadow-md shadow-slate-200/40 border-2 border-red-200 transition relative hover:shadow-lg hover:border-red-400">
-                        <div className="absolute top-0 left-0 right-0 bg-red-100 px-3 md:px-4 py-1 flex justify-between items-center border-b border-red-100">
+                    <div key={review.id} className="bg-white p-2.5 md:p-3 rounded-lg md:rounded-xl shadow-md shadow-slate-200/40 border-2 border-red-200 transition relative overflow-hidden hover:shadow-lg hover:border-red-400">
+                        <div className="absolute top-0 left-0 right-0 bg-red-100 px-2.5 md:px-3 py-0.5 flex justify-between items-center border-b-2 border-red-200">
                             <div className="flex items-center gap-1">
                                 <span className="material-symbols-outlined text-red-600 text-[9px] md:text-[10px]" data-weight="fill">verified_user</span>
                                 <span className="text-[7px] md:text-[8px] font-black tracking-widest text-red-600 uppercase">Reseña VeritasInmueble</span>
                             </div>
                         </div>
 
-                        <div className="flex items-start space-x-2.5 pt-5 md:pt-6">
+                        <div className="flex items-start space-x-2 pt-7 md:pt-8">
                             <div className="flex-shrink-0">
                                 <UserAvatar 
                                     name={review.usuarioNombre} 

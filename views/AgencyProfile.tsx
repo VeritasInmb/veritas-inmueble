@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Inmobiliaria, Resena, Usuario, Reply } from '../types';
 import { db, firebase } from '../services/firebase';
 import { getScoreInfo, calculateSocialVerdict } from '../constants';
@@ -8,13 +8,13 @@ import { ReviewForm, ReviewList } from '../components/reviews/ReviewSystem';
 import { WarningIcon, DocumentIcon, StarIcon, MagnifyingGlassIcon, UserIcon, ShareIcon, CheckCircleIcon } from '../components/Icons';
 
 const getSocialTheme = (network: string) => {
-    if (!network) return { text: 'text-slate-600', bg: 'bg-slate-500/10', border: 'border-2 border-slate-500/30 hover:border-slate-500/50', shadow: 'shadow-slate-500/5', borderL: 'border-slate-500/30', badgeBg: 'bg-slate-100', badgeBorder: 'border-slate-300' };
+    if (!network) return { text: 'text-slate-600', bg: 'bg-slate-500/10', border: 'border border-slate-500/20 hover:border-slate-500/40', shadow: 'shadow-slate-500/5', borderL: 'border-slate-500/20', badgeBg: 'bg-slate-100', badgeBorder: 'border-slate-200', icon: 'public' };
     const net = network.toLowerCase();
-    if (net.includes('facebook')) return { text: 'text-blue-600', bg: 'bg-blue-500/10', border: 'border-2 border-blue-500/50 hover:border-blue-500', shadow: 'shadow-blue-500/5', borderL: 'border-blue-500/30', badgeBg: 'bg-blue-100', badgeBorder: 'border-blue-300' };
-    if (net.includes('google')) return { text: 'text-red-600', bg: 'bg-red-500/10', border: 'border-2 border-red-500/50 hover:border-red-500', shadow: 'shadow-red-500/5', borderL: 'border-red-500/30', badgeBg: 'bg-red-100', badgeBorder: 'border-red-300' };
-    if (net.includes('tiktok') || net.includes('x') || net.includes('twitter')) return { text: 'text-slate-900', bg: 'bg-slate-900/5', border: 'border-2 border-slate-900/30 hover:border-slate-900/50', shadow: 'shadow-slate-900/5', borderL: 'border-slate-900/30', badgeBg: 'bg-slate-200', badgeBorder: 'border-slate-400' };
-    if (net.includes('instagram')) return { text: 'text-fuchsia-600', bg: 'bg-fuchsia-500/10', border: 'border-2 border-fuchsia-500/50 hover:border-fuchsia-500', shadow: 'shadow-fuchsia-500/5', borderL: 'border-fuchsia-500/30', badgeBg: 'bg-fuchsia-100', badgeBorder: 'border-fuchsia-300' };
-    return { text: 'text-slate-600', bg: 'bg-slate-500/10', border: 'border-2 border-slate-500/30 hover:border-slate-500/50', shadow: 'shadow-slate-500/5', borderL: 'border-slate-500/30', badgeBg: 'bg-slate-100', badgeBorder: 'border-slate-300' };
+    if (net.includes('facebook')) return { text: 'text-blue-600', bg: 'bg-blue-500/10', border: 'border border-blue-500/20 hover:border-blue-500/40', shadow: 'shadow-blue-500/5', borderL: 'border-blue-500/20', badgeBg: 'bg-blue-100', badgeBorder: 'border-blue-200', icon: 'thumb_up' };
+    if (net.includes('google')) return { text: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border border-amber-500/20 hover:border-amber-500/40', shadow: 'shadow-amber-500/5', borderL: 'border-amber-500/20', badgeBg: 'bg-amber-100', badgeBorder: 'border-amber-200', icon: 'location_on' };
+    if (net.includes('tiktok') || net.includes('x') || net.includes('twitter')) return { text: 'text-slate-900', bg: 'bg-slate-900/5', border: 'border border-slate-900/20 hover:border-slate-900/40', shadow: 'shadow-slate-900/5', borderL: 'border-slate-900/20', badgeBg: 'bg-slate-200', badgeBorder: 'border-slate-300', icon: net.includes('tiktok') ? 'play_circle' : 'tag' };
+    if (net.includes('instagram')) return { text: 'text-fuchsia-600', bg: 'bg-fuchsia-500/10', border: 'border border-fuchsia-500/20 hover:border-fuchsia-500/40', shadow: 'shadow-fuchsia-500/5', borderL: 'border-fuchsia-500/20', badgeBg: 'bg-fuchsia-100', badgeBorder: 'border-fuchsia-200', icon: 'photo_camera' };
+    return { text: 'text-slate-600', bg: 'bg-slate-500/10', border: 'border border-slate-500/20 hover:border-slate-500/40', shadow: 'shadow-slate-500/5', borderL: 'border-slate-500/20', badgeBg: 'bg-slate-100', badgeBorder: 'border-slate-200', icon: 'public' };
 };
 
 interface AgencyProfileProps {
@@ -199,19 +199,13 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
             '@type': 'PostalAddress',
             addressRegion: agency.estado || 'Mexico',
             addressCountry: 'MX'
-        },
-        ...(agency.score ? {
-            aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: agency.score.toString(),
-                bestRating: '10',
-                ratingCount: reviews.length > 0 ? reviews.length : 1
-            }
-        } : {})
+        }
+        // Nota: Se elimina aggregateRating temporalmente para evitar 
+        // indexación del Score en Google y posibles reclamos legales.
     };
 
     return (
-        <main className="flex-1 w-full max-w-[1024px] mx-auto pt-24 md:pt-32 px-4 md:px-6 py-4 md:py-6 relative overflow-hidden">
+        <main className="flex-1 w-[92%] max-w-[1500px] mx-auto pt-24 md:pt-32 px-4 md:px-6 py-4 md:py-6 relative overflow-hidden">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-red-50 to-transparent rounded-bl-full pointer-events-none -z-10"></div>
             <div className="absolute font-black text-4xl md:text-[64px] text-slate-900/5 top-8 md:-top-2 right-4 md:right-8 pointer-events-none select-none -z-10 tracking-tighter">FORENSE</div>
@@ -254,10 +248,19 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                             <span className={`text-3xl md:text-4xl font-black ${scoreInfo.textColor} relative z-10 -mt-0.5`}>{agency.score}</span>
                         </div>
                     </div>
+                    {/* Botón de Reclamar Perfil (Legal Safe Harbor) */}
+                    <div className="absolute bottom-2 right-3 md:right-4 z-20">
+                        <button 
+                            onClick={() => { window.location.href = `/reclamar-agencia?id=${agency.id}&name=${encodeURIComponent(agency.nombre)}`; }}
+                            className="text-[8px] md:text-[9px] text-slate-300 hover:text-slate-500 font-normal transition-colors"
+                        >
+                            ¿Eres el dueño? Reclamar perfil
+                        </button>
+                    </div>
                 </section>
 
                 {/* PROFECO */}
-                <section className="col-span-1 md:col-span-4 row-span-2 bento-card-alert rounded-[16px] md:rounded-[20px] p-4 flex flex-col justify-between relative overflow-hidden">
+                <section className="col-span-1 md:col-span-4 row-span-2 bento-card-alert rounded-[16px] md:rounded-[20px] p-3 md:p-4 flex flex-col justify-between relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-1 h-full ${agency.dictamenProfeco?.totalQuejas ? 'bg-red-600' : 'bg-emerald-500'}`}></div>
                     <div className="flex items-center justify-between mb-3">
                         <div className={`w-8 h-8 rounded-lg ${agency.dictamenProfeco?.totalQuejas ? 'bg-red-100' : 'bg-emerald-50'} flex items-center justify-center shrink-0`}>
@@ -282,7 +285,7 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                 </section>
 
                 {/* SAT */}
-                <section className="col-span-1 md:col-span-4 row-span-2 bento-card-alert rounded-[16px] md:rounded-[20px] p-4 flex flex-col justify-between relative overflow-hidden">
+                <section className="col-span-1 md:col-span-4 row-span-2 bento-card-alert rounded-[16px] md:rounded-[20px] p-3 md:p-4 flex flex-col justify-between relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-1 h-full bg-${getSatColor(agency.rfcStatus)}`}></div>
                     <div className="flex items-center justify-between mb-3">
                         <div className={`w-8 h-8 rounded-lg bg-${getSatColor(agency.rfcStatus)}/10 flex items-center justify-center shrink-0`}>
@@ -306,7 +309,7 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                 </section>
 
                 {/* CONTRATO */}
-                <section className="col-span-1 md:col-span-4 row-span-2 bento-card rounded-[16px] md:rounded-[20px] p-4 flex flex-col justify-between relative overflow-hidden">
+                <section className="col-span-1 md:col-span-4 row-span-2 bento-card rounded-[16px] md:rounded-[20px] p-3 md:p-4 flex flex-col justify-between relative overflow-hidden">
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                             <span className="material-symbols-outlined text-slate-500 text-xl" data-weight="fill">contract</span>
@@ -424,18 +427,38 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                     </div>
                     
                     {agency.mencionesWeb && agency.mencionesWeb.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                            {agency.mencionesWeb.slice(0, 3).map(noticia => (
-                                <div key={noticia.id} className="p-2.5 md:p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between shadow-sm">
-                                    <div>
-                                        <div className="flex justify-between items-start mb-1.5">
-                                            <span className={`font-bold uppercase tracking-widest text-[7px] md:text-[8px] ${noticia.tono === 'Negativo' ? 'text-red-600 bg-red-100' : noticia.tono === 'Positivo' ? 'text-emerald-700 bg-emerald-100' : 'text-slate-500 bg-slate-100'} px-1.5 py-0.5 rounded-full uppercase`}>{noticia.tono}</span>
-                                        </div>
-                                        <h4 className="font-bold text-xs md:text-sm text-slate-900 mb-0.5">{noticia.titular}</h4>
-                                        <p className="text-[9px] md:text-[10px] text-slate-500 leading-relaxed">{noticia.resumen}</p>
+                        <div className="relative w-full overflow-hidden">
+                            {/* Gradient masks */}
+                            <div className="absolute top-0 left-0 w-8 md:w-16 h-full bg-gradient-to-r from-white to-transparent z-20 pointer-events-none"></div>
+                            <div className="absolute top-0 right-0 w-8 md:w-16 h-full bg-gradient-to-l from-white to-transparent z-20 pointer-events-none"></div>
+                            
+                            <div className="flex gap-3 pb-3 pt-1 animate-radar-scroll w-max hover:[animation-play-state:paused] cursor-grab active:cursor-grabbing">
+                                {[...agency.mencionesWeb, ...agency.mencionesWeb, ...agency.mencionesWeb, ...agency.mencionesWeb].map((noticia, index) => (
+                                    <a 
+                                        key={`${noticia.id}-${index}`} 
+                                        href={noticia.url || '#'} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="w-[260px] md:w-[300px] flex-shrink-0 p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-start shadow-sm hover:shadow-md hover:border-slate-300 transition-all group"
+                                    >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className={`font-bold uppercase tracking-widest text-[7px] md:text-[8px] ${noticia.tono === 'Negativo' ? 'text-red-600 bg-red-100' : noticia.tono === 'Positivo' ? 'text-emerald-700 bg-emerald-100' : 'text-slate-500 bg-slate-100'} px-2 py-0.5 rounded-full`}>{noticia.tono}</span>
+                                        <span className="material-symbols-outlined text-slate-300 text-xs group-hover:text-red-500 transition-colors">open_in_new</span>
                                     </div>
-                                </div>
-                            ))}
+                                    <h4 className="font-bold text-xs md:text-sm text-slate-900 mb-1.5 line-clamp-2 group-hover:text-red-600 transition-colors leading-tight">{noticia.titular}</h4>
+                                    <p className="text-[9px] md:text-[10px] text-slate-500 leading-relaxed line-clamp-3">{noticia.resumen}</p>
+                                    </a>
+                                ))}
+                            </div>
+                            <style>{`
+                                @keyframes radarScroll {
+                                    0% { transform: translateX(0); }
+                                    100% { transform: translateX(-25%); }
+                                }
+                                .animate-radar-scroll {
+                                    animation: radarScroll 80s linear infinite;
+                                }
+                            `}</style>
                         </div>
                     ) : (
                         <div className="flex items-center justify-center py-6 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 text-center">
@@ -494,16 +517,15 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                                 {agency.evidenciasSociales.map((fb, index) => {
                                     const theme = getSocialTheme(fb.redSocial);
                                     return (
-                                    <div key={`social-${index}`} className={`bg-white p-3 md:p-4 rounded-xl md:rounded-2xl shadow-md ${theme.shadow} border ${theme.border} relative overflow-hidden transition hover:shadow-lg`}>
-                                        <div className={`absolute top-0 left-0 right-0 ${theme.bg} px-3 md:px-4 py-1 border-b ${theme.border} flex justify-between items-center`}>
+                                    <div key={`social-${index}`} className={`bg-white p-2.5 md:p-3 rounded-lg md:rounded-xl shadow-md ${theme.shadow} border ${theme.border} relative overflow-hidden transition hover:shadow-lg`}>
+                                        <div className={`absolute top-0 left-0 right-0 ${theme.bg} px-2.5 md:px-3 py-0.5 border-b ${theme.borderL} flex justify-between items-center`}>
                                             <div className="flex items-center gap-1">
-                                                <span className={`material-symbols-outlined ${theme.text} text-[9px] md:text-[10px]`} data-weight="fill">public</span>
-                                                <span className={`text-[7px] md:text-[8px] font-black tracking-widest ${theme.text} uppercase`}>Post de {fb.redSocial}</span>
+                                                <span className={`material-symbols-outlined ${theme.text} text-[7px] md:text-[8px]`} data-weight="fill">{theme.icon}</span>
+                                                <span className={`text-[6px] md:text-[7px] font-black tracking-widest ${theme.text} uppercase`}>Post de {fb.redSocial}</span>
                                             </div>
-                                            {/* Etiqueta IA eliminada según petición */}
                                         </div>
 
-                                        <div className="flex items-start space-x-2.5 pt-5 md:pt-6">
+                                        <div className="flex items-start space-x-2 pt-7 md:pt-8">
                                             <div className="flex-shrink-0">
                                                 <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full ${theme.badgeBg} border border-dashed ${theme.badgeBorder} flex items-center justify-center ${theme.text} opacity-70`}>
                                                     <span className="material-symbols-outlined text-xs md:text-sm">person_off</span>
@@ -511,16 +533,16 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                                             </div>
                                             <div className="flex-grow">
                                                 <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
-                                                    <p className="font-bold text-[10px] md:text-xs text-slate-900 line-through decoration-slate-400">Usuario Anonimizado</p>
+                                                    <p className={`font-bold text-[10px] md:text-xs ${fb.resenaGenerada?.rolPublico?.toLowerCase() === 'inmobiliaria' ? 'text-red-800' : 'text-slate-900'} ${(fb.resenaGenerada?.rolPublico || 'Usuario Anonimizado').includes('Anonimizado') ? 'line-through decoration-slate-400' : ''}`}>{fb.resenaGenerada?.rolPublico || 'Usuario Anonimizado'}</p>
                                                 </div>
                                                 <p className="text-[10px] md:text-xs text-slate-800 leading-relaxed mb-2 whitespace-pre-wrap font-medium italic">"{fb.resenaGenerada?.comentario || fb.resenaGenerada?.textoExtracto || "Contenido no disponible"}"</p>
                                                 
                                                 {fb.replies && fb.replies.length > 0 && (
-                                                <div className={`mt-2 pl-2 border-l-2 ${theme.borderL} space-y-1.5`}>
+                                                <div className={`mt-1.5 pl-2 border-l-2 ${theme.borderL} space-y-1`}>
                                                     {fb.replies.map((reply, rIdx) => (
-                                                        <div key={rIdx} className={`${theme.bg} rounded-lg px-2.5 py-1.5 border ${theme.border}`}>
+                                                        <div key={rIdx} className={`${theme.bg} rounded-md px-2 py-1`}>
                                                             <div className="flex justify-between items-baseline mb-0.5">
-                                                                <span className="font-bold text-slate-900 text-[9px] md:text-[10px] line-through decoration-slate-400">Otro Afectado</span>
+                                                                <span className={`font-bold text-[9px] md:text-[10px] ${reply.resenaGenerada?.rolPublico?.toLowerCase() === 'inmobiliaria' ? 'text-red-800' : 'text-slate-900'} ${(reply.resenaGenerada?.rolPublico || 'Otro Afectado').includes('Anonimizado') || (reply.resenaGenerada?.rolPublico || 'Otro Afectado').includes('Afectado') ? 'line-through decoration-slate-400' : ''}`}>{reply.resenaGenerada?.rolPublico || 'Otro Afectado'}</span>
                                                             </div>
                                                             <p className="text-slate-700 text-[9px] md:text-[10px] italic font-medium">"{reply.resenaGenerada?.comentario || reply.resenaGenerada?.textoExtracto || "Contenido no disponible"}"</p>
                                                         </div>

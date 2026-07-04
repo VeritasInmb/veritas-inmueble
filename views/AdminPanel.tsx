@@ -10,14 +10,15 @@ import { AgencyManager } from '../features/admin/components/AgencyManager';
 import { UserManager } from '../features/admin/components/UserManager';
 import { BlogManager } from '../features/admin/components/BlogManager';
 import { RequestManager } from '../features/admin/components/RequestManager';
+import { ClaimManager } from '../features/admin/components/ClaimManager';
 
 export interface AdminPanelProps {}
 
 export const AdminPanel: React.FC<AdminPanelProps> = () => {
-    const [adminView, setAdminView] = useState<'users' | 'agencies' | 'requests' | 'blog' | 'forum'>('agencies');
+    const [adminView, setAdminView] = useState<'users' | 'agencies' | 'requests' | 'claims' | 'blog' | 'forum'>('agencies');
     
     // Global Delete State for Admin
-    const [deletingItem, setDeletingItem] = useState<{ type: 'agency' | 'user' | 'request' | 'blog'; id: string } | null>(null);
+    const [deletingItem, setDeletingItem] = useState<{ type: 'agency' | 'user' | 'request' | 'claim' | 'blog'; id: string } | null>(null);
 
     const confirmDelete = async () => { 
         if (!deletingItem) return; 
@@ -25,6 +26,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = () => {
             const collectionName = deletingItem.type === 'agency' ? 'inmobiliarias' 
                                  : deletingItem.type === 'user' ? 'usuarios' 
                                  : deletingItem.type === 'blog' ? 'blogs'
+                                 : deletingItem.type === 'claim' ? 'claim_requests'
                                  : 'solicitudesRevision';
             await db.collection(collectionName).doc(deletingItem.id).delete(); 
         } catch (e) { 
@@ -52,7 +54,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = () => {
                             <DocumentIcon className="w-5 h-5" /> <span>Blog</span>
                         </button>
                         <button onClick={() => setAdminView('requests')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl font-bold text-left transition-all mt-2 ${adminView === 'requests' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-700 hover:bg-slate-50 shadow-sm border border-slate-100'}`}>
-                            <ShieldCheckIcon className="w-5 h-5" /> <span>Solicitudes</span>
+                            <ShieldCheckIcon className="w-5 h-5" /> <span>Reportes Usuarios</span>
+                        </button>
+                        <button onClick={() => setAdminView('claims')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl font-bold text-left transition-all mt-2 ${adminView === 'claims' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-700 hover:bg-slate-50 shadow-sm border border-slate-100'}`}>
+                            <BuildingOfficeIcon className="w-5 h-5" /> <span>Dueños Inmobiliarias</span>
                         </button>
                     </nav>
                 </aside>
@@ -61,6 +66,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = () => {
                     {adminView === 'users' && <UserManager setDeletingItem={setDeletingItem} />}
                     {adminView === 'blog' && <BlogManager setDeletingItem={setDeletingItem} />}
                     {adminView === 'requests' && <RequestManager setDeletingItem={setDeletingItem} />}
+                    {adminView === 'claims' && <ClaimManager setDeletingItem={setDeletingItem} />}
                 </section>
             </div>
             

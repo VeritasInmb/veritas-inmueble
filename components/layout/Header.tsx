@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoggedIn, onReviewClick, onLog
     return (
         <>
             <header className="fixed w-full top-4 z-50 px-4">
-                <nav className="container mx-auto bg-white/90 backdrop-blur-xl rounded-full shadow-xl border border-gray-100 py-3 px-6 flex justify-between items-center">
+                <nav className="w-[92%] max-w-[1500px] mx-auto bg-white/90 backdrop-blur-xl rounded-full shadow-xl border border-gray-100 py-3 px-6 flex justify-between items-center">
                     <Link href="/" className="text-xl font-black tracking-tighter text-slate-900 flex items-center gap-1">
                         Veritas<span className="text-red-600">Inmueble</span>
                     </Link>

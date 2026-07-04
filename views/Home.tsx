@@ -54,7 +54,7 @@ const horrorStories = [
         title: "El anticipo fantasma",
         content: "Encontré un depa en la Roma a mitad de precio. Me pidieron 20 mil para 'apartarlo' antes de verlo. Al día siguiente, el número no existía y la oficina era un lote baldío.",
         loss: "$20,000 MXN",
-        tag: "Fraude Digital"
+        tag: "Riesgo Operativo"
     },
     {
         id: 2,
@@ -204,7 +204,7 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
     };
 
     return (
-        <main className="container mx-auto px-4 pt-24 pb-8">
+        <main className="w-[92%] max-w-[1500px] mx-auto pt-24 pb-8">
             
             {/* HERO SECTION */}
             <section className="relative bg-white rounded-[3rem] shadow-2xl shadow-slate-200/60 p-6 sm:p-12 lg:p-16 mb-16 overflow-visible border border-slate-100 flex flex-col lg:flex-row items-center gap-6 lg:gap-12 bg-grid-pattern min-h-[650px]">
@@ -219,7 +219,7 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
                     </div>
 
                     {/* Título Principal */}
-                    <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 mb-6 leading-none tracking-tighter">
+                    <h1 className="text-5xl sm:text-6xl lg:text-6xl font-black text-slate-900 mb-6 leading-none tracking-tighter">
                         Dale <span className="text-red-600">Poder</span> a tu <br className="hidden sm:block"/>Inversión.
                     </h1>
 
@@ -388,7 +388,7 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{topHomeAgencies.slice(0, 4).map((agency) => <AgencyCard key={agency.id} agency={agency} onSelect={(agency) => onNavigate('profile', agency)} />)}</div>
             </section>
 
-            {/* SECCIÓN 1: EL MURO DE LA VERGÜENZA */}
+            {/* SECCIÓN 1: ZONA DE MÁXIMO RIESGO */}
             {riskyAgencies.length > 0 && (
                 <section className="mb-24 bg-red-50 rounded-[3rem] p-8 sm:p-12 relative overflow-hidden border border-red-100">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-red-200 rounded-full filter blur-[100px] opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
@@ -398,8 +398,8 @@ export const Home: React.FC<HomeProps> = ({ stats, onNavigate, onTopicClick }) =
                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full font-bold text-xs mb-3 border border-red-200">
                                     <WarningIcon className="w-4 h-4"/> ALERTA DE RIESGO
                                 </div>
-                                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">El Muro de la <span className="text-red-600">Vergüenza</span></h2>
-                                <p className="text-slate-600 mt-4 text-lg font-medium max-w-2xl">Detectamos actividad inusual, reportes de fraude o falta de contratos. Estas son las agencias con <strong>mayor riesgo</strong> esta semana.</p>
+                                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">Zona de <span className="text-red-600">Máximo Riesgo</span></h2>
+                                <p className="text-slate-600 mt-4 text-lg font-medium max-w-2xl">Detectamos anomalías en sus registros públicos y reportes de usuarios. Estas son las agencias con <strong>mayor riesgo operativo</strong> esta semana.</p>
                             </div>
                         </div>
                         

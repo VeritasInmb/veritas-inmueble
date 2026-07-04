@@ -56,11 +56,13 @@ export interface Inmobiliaria {
   controversiasWebUrls?: string[];
   fichaTecnica?: FichaTecnica;
   evidenciasSociales?: Array<{ 
+    id?: string,
     redSocial: string, 
     fileUrl: string, 
     esPostPrincipal: boolean, 
     resenaGenerada: Partial<Resena>,
     replies?: Array<{
+        id?: string,
         redSocial: string,
         fileUrl: string,
         resenaGenerada: Partial<Resena>
@@ -104,6 +106,7 @@ export interface Reply {
   comentario: string;
   calificacion?: number;
   fecha: any; // Firestore Timestamp
+  rolPublico?: string; // e.g. "Usuario Anonimizado", "Propietario", "Agente"
 }
 
 export interface Resena {
@@ -133,6 +136,7 @@ export interface Resena {
   replies?: Reply[]; // Array of replies
   estado?: 'pendiente' | 'publicada';
   redSocialOrigen?: string; // If this review was extracted from social media (e.g. Facebook)
+  rolPublico?: string; // e.g. "Usuario Anonimizado", "Propietario"
 }
 
 export interface BlogPost {

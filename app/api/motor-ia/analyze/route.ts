@@ -39,26 +39,32 @@ export async function POST(req: NextRequest) {
             
             Reglas de extracción para cada elemento detectado:
             1. tipo: Determina si el elemento es un "post" (la publicación principal) o un "comentario".
-            2. autorSimulado: Si ves el nombre, usa SOLO el primer nombre y la inicial del primer apellido (Ej: "Juan P."). Si no es visible, usa "Anónimo".
+            2. autorSimulado: Si el autor es un usuario común, usa SOLO el primer nombre y la inicial del primer apellido (Ej: "Juan P."). Si es la cuenta oficial de la empresa/inmobiliaria respondiendo, usa el nombre de la empresa o simplemente "Inmobiliaria". Si no es visible, usa "Usuario Anonimizado".
             3. textoExtracto: Si el elemento es puro texto, transcríbelo. PERO si incluye imágenes, NO transcribas texto sin sentido; redacta una descripción interpretando el contexto (Ej: "El usuario publicó fotos mostrando humedades...").
-            4. calificacion: Evalúa el nivel de queja y asigna una calificación del 1 al 5.
+            4. calificacion: Analiza el sentimiento del post/comentario y asígnale estrellas del 1 al 5 (1 siendo muy negativo/queja, 5 muy positivo). Si es sólo una duda, pregunta, o no indica nada en especial (neutral), asigna estrictamente un 0.
             5. fechaStr: Identifica y extrae el texto que indique la fecha o antigüedad del post o comentario (Ej: "Hace 6 meses", "Hace 2 semanas", "Ayer", "23 May"). Si no es visible, usa "SIN FECHA".
-            6. ANIDACIÓN: Si detectas que un "post" tiene "comentarios" respondiéndole en la misma imagen, incluye los comentarios dentro del arreglo "respuestas" de ese post. Si es solo un comentario suelto o un post suelto, ponlo en la raíz.
+            6. rol: Determina si el autor es un "Usuario Anonimizado" (cliente o persona) o la "Inmobiliaria" (la cuenta oficial de la empresa respondiendo).
+            7. ANIDACIÓN (1 NIVEL MÁXIMO): El sistema solo soporta UN nivel de anidación (Post -> Respuestas). 
+            - Si la imagen muestra un POST principal con varios comentarios, pon los comentarios en "respuestas".
+            - Si la imagen solo muestra un COMENTARIO de un usuario y debajo la respuesta de la Inmobiliaria a ese comentario, TRATA al comentario del usuario como si fuera el "post" principal (tipo: "post") y mete la respuesta de la inmobiliaria dentro de sus "respuestas" (tipo: "comentario").
+            8. NO OMITAS NADA: Es CRÍTICO que extraigas TODAS las respuestas visibles en la captura. Presta especial atención a las respuestas que la cuenta de la Inmobiliaria hace a los comentarios de los usuarios y asegúrate de incluirlas como objetos dentro de "respuestas" bajo la regla anterior.
             
             Devuelve ESTRICTAMENTE un JSON válido que contenga un ARRAY de objetos con esta estructura (ejemplo con anidación):
             [
               {
                 "tipo": "post",
-                "autorSimulado": "Nombre P.",
+                "autorSimulado": "Usuario 1",
                 "textoExtracto": "La queja transcrita...",
                 "calificacion": 1,
+                "rol": "Usuario Anonimizado",
                 "fechaStr": "Hace 6 meses",
                 "respuestas": [
                   {
                     "tipo": "comentario",
-                    "autorSimulado": "Ana G.",
-                    "textoExtracto": "A mí también me estafaron...",
-                    "calificacion": 1,
+                    "autorSimulado": "Inmobiliaria",
+                    "textoExtracto": "Lamentamos lo sucedido...",
+                    "calificacion": 0,
+                    "rol": "Inmobiliaria",
                     "fechaStr": "Hace 5 meses"
                   }
                 ]

@@ -34,7 +34,7 @@ export const BlogList: React.FC<{ onNavigate: (view: 'blogPost', post: BlogPost)
     }
 
     return (
-        <main className="container mx-auto px-4 pt-24 pb-8">
+        <main className="w-[92%] max-w-[1500px] mx-auto pt-24 pb-8">
             <section className="text-center mb-16 max-w-4xl mx-auto">
                 <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tighter">Blog <span className="text-red-600">Experto</span></h1>
                 <p className="text-xl text-slate-600 font-medium leading-relaxed">Guías directas, sin rodeos. Aprende a detectar las trampas del mercado antes de que caigas en ellas.</p>
@@ -61,7 +61,7 @@ export const BlogPostView: React.FC<{ post: BlogPost; onBack: () => void }> = ({
     const sanitizedContent = DOMPurify.sanitize(post.content);
 
     return (
-        <main className="container mx-auto px-4 pt-24 pb-8">
+        <main className="w-[92%] max-w-[1500px] mx-auto pt-24 pb-8">
                 <article className="max-w-3xl mx-auto bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
                 <div className="h-80 sm:h-96 relative"><img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div><div className="absolute bottom-8 left-8 right-8"><h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-3 leading-tight">{post.title}</h1><div className="flex items-center text-white/80 text-sm font-bold gap-3"><span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-md">{post.author}</span><span>{post.date}</span></div></div></div>
                 {/* Use sanitized content */}

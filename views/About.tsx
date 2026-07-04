@@ -9,12 +9,12 @@ interface AboutProps {
 
 export const About: React.FC<AboutProps> = ({ onGoHome }) => {
     return (
-        <main className="pt-24 pb-8">
-            <section className="container mx-auto px-6 text-center mb-16">
+        <main className="w-[92%] max-w-[1500px] mx-auto pt-24 pb-8">
+            <section className="w-full px-6 text-center mb-16">
                 <h1 className="text-5xl sm:text-7xl font-black text-slate-900 mb-6 tracking-tighter">Nuestra Misión es <span className="text-red-600">Protegerte</span></h1>
                 <p className="text-xl md:text-2xl text-slate-600 font-medium leading-relaxed max-w-3xl mx-auto">Nacimos del hartazgo. De ver familias perder sus ahorros por falta de información. Decidimos que la verdad debe ser gratuita, accesible e instantánea.</p>
             </section>
-            <section className="container mx-auto px-6 mb-24">
+            <section className="w-full px-6 mb-24">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 hover:-translate-y-2 transition-transform duration-300">
                         <div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center mb-6"><MagnifyingGlassIcon className="w-8 h-8 text-red-600" /></div>
@@ -33,8 +33,8 @@ export const About: React.FC<AboutProps> = ({ onGoHome }) => {
                     </div>
                 </div>
             </section>
-            <section className="container mx-auto px-6 mb-24"><FraudContextSection /></section>
-            <section className="bg-slate-900 py-24 rounded-[3rem] container mx-auto px-6 text-center relative overflow-hidden shadow-2xl shadow-slate-900/30 mx-4 md:mx-auto">
+            <section className="w-full px-6 mb-24"><FraudContextSection /></section>
+            <section className="bg-slate-900 py-24 rounded-[3rem] w-full px-6 text-center relative overflow-hidden shadow-2xl shadow-slate-900/30 mx-4 md:mx-0">
                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-slate-800 to-slate-900"></div>
                 <div className="relative z-10 max-w-3xl mx-auto">
                     <h2 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">No te la juegues.<br/>Verifica antes de firmar.</h2>

@@ -84,7 +84,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onNavigate }) => {
     }
 
     return (
-        <main className="container mx-auto px-4 pt-24 pb-8">
+        <main className="w-[92%] max-w-[1500px] mx-auto pt-24 pb-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
                 <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-4 tracking-tight">Directorio <span className="text-red-600">Oficial</span></h1>
                 <p className="text-xl text-slate-600 font-medium leading-relaxed">Navega por la lista definitiva de inmobiliarias analizadas. Filtra, compara y decide con datos.</p>
@@ -105,7 +105,7 @@ export const Directory: React.FC<DirectoryProps> = ({ onNavigate }) => {
                     </button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
                 {filteredAndSortedDirectoryAgencies.map((agency) => <AgencyCard key={agency.id} agency={agency} onSelect={(agency) => onNavigate('profile', agency)} />)}
             </div>
             {filteredAndSortedDirectoryAgencies.length === 0 && <div className="text-center py-24"><p className="text-2xl font-black text-slate-400">No encontramos nada...</p><p className="text-slate-500 mt-2">Intenta ajustar tus filtros.</p></div>}

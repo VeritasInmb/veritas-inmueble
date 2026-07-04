@@ -5,11 +5,16 @@ import { GoogleGenAI } from '@google/genai';
 // @ts-ignore
 import whois from 'whois-json';
 // @ts-ignore
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+// @ts-ignore
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+
+puppeteer.use(StealthPlugin());
 
 export async function POST(req: NextRequest) {
     try {
-        const { url } = await req.json();
+        const { url, timeoutMs } = await req.json();
+        const pageLoadTimeout = timeoutMs || 20000;
         
         if (!url) {
             return NextResponse.json({ error: 'Missing URL' }, { status: 400 });
@@ -34,7 +39,7 @@ export async function POST(req: NextRequest) {
             const browser = await puppeteer.launch({ headless: true });
             const page = await browser.newPage();
             await page.setViewport({ width: 1280, height: 800 });
-            await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 });
+            await page.goto(url, { waitUntil: 'networkidle2', timeout: pageLoadTimeout });
             await new Promise(resolve => setTimeout(resolve, 3000));
             
             // Screenshot 1: Top
@@ -121,8 +126,10 @@ export async function POST(req: NextRequest) {
         }
 
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const currentDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
         const prompt = `
         Eres un analista de inteligencia cibernética investigando a una agencia inmobiliaria por posibles fraudes.
+        La fecha actual del sistema es: ${currentDate}. Ten esto en cuenta estrictamente para todos los cálculos temporales.
         A continuación se muestra el texto extraído de TODAS sus páginas internas, y los metadatos de su dominio web.
         También se te proporcionan hasta 4 capturas de pantalla de la página web principal (Parte superior, dos partes medias y la parte inferior).
         

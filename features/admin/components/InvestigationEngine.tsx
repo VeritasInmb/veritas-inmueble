@@ -3,6 +3,7 @@ import { Inmobiliaria } from '../../../types';
 import { SpinnerIcon, SearchIcon, UploadIcon, CheckCircleIcon, ShieldCheckIcon, GlobeIcon, MapPinIcon, DocumentIcon } from '../../../components/Icons';
 import { storage } from '../../../services/firebase';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { get, set, del } from 'idb-keyval';
 
 interface InvestigationEngineProps {
     onComplete: (agency: Partial<Inmobiliaria>) => void;
@@ -14,6 +15,7 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
     const [currentStep, setCurrentStep] = useState(0);
     const [agencyData, setAgencyData] = useState<Partial<Inmobiliaria>>(initialData || {});
     const [scrapeUrl, setScrapeUrl] = useState('');
+    const [scrapeTimeoutMs, setScrapeTimeoutMs] = useState(20000);
     
     // UI states
     const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +41,80 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
     const [searchCandidates, setSearchCandidates] = useState<any[]>([]);
     const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
     
+    // Draft states
+    const [draftStatus, setDraftStatus] = useState<'checking' | 'prompting' | 'active'>('checking');
+    const [draftPrompt, setDraftPrompt] = useState<any>(null);
+    const DRAFT_KEY = `veritas_draft_${initialData?.id || 'new'}`;
+
+    useEffect(() => {
+        const checkDraft = async () => {
+            try {
+                const draft = await get(DRAFT_KEY);
+                if (draft) {
+                    setDraftPrompt(draft);
+                    setDraftStatus('prompting');
+                } else {
+                    setDraftStatus('active');
+                }
+            } catch (e) {
+                console.error("Error loading draft", e);
+                setDraftStatus('active');
+            }
+        };
+        checkDraft();
+    }, [DRAFT_KEY]);
+
+    useEffect(() => {
+        if (draftStatus !== 'active') return;
+        
+        const draft = {
+            currentStep,
+            agencyData,
+            socialCandidates,
+            socialPreviews,
+            profecoPreviews,
+            searchCandidates,
+            selectedUrls,
+            selectedSocialIds,
+            manualNewsUrl,
+            manualNewsText
+        };
+        
+        const timeout = setTimeout(() => {
+            set(DRAFT_KEY, draft).catch(e => console.error("Error saving draft", e));
+        }, 1000);
+        
+        return () => clearTimeout(timeout);
+    }, [
+        draftStatus,
+        DRAFT_KEY,
+        currentStep, agencyData, socialCandidates, socialPreviews, 
+        profecoPreviews, searchCandidates, selectedUrls, selectedSocialIds,
+        manualNewsUrl, manualNewsText
+    ]);
+
+    const handleRestoreDraft = () => {
+        if (!draftPrompt) return;
+        setCurrentStep(draftPrompt.currentStep || 0);
+        setAgencyData(draftPrompt.agencyData || {});
+        setSocialCandidates(draftPrompt.socialCandidates || []);
+        setSocialPreviews(draftPrompt.socialPreviews || []);
+        setProfecoPreviews(draftPrompt.profecoPreviews || []);
+        setSearchCandidates(draftPrompt.searchCandidates || []);
+        setSelectedUrls(draftPrompt.selectedUrls || []);
+        setSelectedSocialIds(draftPrompt.selectedSocialIds || []);
+        setManualNewsUrl(draftPrompt.manualNewsUrl || '');
+        setManualNewsText(draftPrompt.manualNewsText || '');
+        setDraftStatus('active');
+        setDraftPrompt(null);
+    };
+
+    const handleDiscardDraft = async () => {
+        await del(DRAFT_KEY);
+        setDraftStatus('active');
+        setDraftPrompt(null);
+    };
+
     // Handlers for steps
     const handleNextStep = () => setCurrentStep(prev => prev + 1);
     
@@ -48,7 +124,7 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
         try {
             const res = await fetch('/api/motor-ia/scrape', {
                 method: 'POST',
-                body: JSON.stringify({ url: scrapeUrl })
+                body: JSON.stringify({ url: scrapeUrl, timeoutMs: scrapeTimeoutMs })
             });
             const data = await res.json();
             
@@ -380,6 +456,7 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
     const handleFinalSave = async () => {
         setIsLoading(true);
         try {
+            await del(DRAFT_KEY);
             const finalData = { ...agencyData };
             const uploadedScreenshotUrls: string[] = [];
 
@@ -568,22 +645,54 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
         <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 max-w-4xl mx-auto my-8">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-black text-slate-900">Motor de Investigación IA</h2>
-                <div className="text-sm font-bold text-slate-400">Paso {currentStep + 1} de 6</div>
+                {draftStatus === 'active' && <div className="text-sm font-bold text-slate-400">Paso {currentStep + 1} de 6</div>}
             </div>
 
-            {/* PROGRESS BAR */}
-            <div className="w-full bg-slate-100 h-2 rounded-full mb-8">
-                <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: (((currentStep + 1) / 6) * 100) + '%' }}></div>
-            </div>
+            {draftStatus === 'checking' && (
+                <div className="flex items-center justify-center p-12">
+                    <SpinnerIcon className="w-8 h-8 animate-spin text-blue-500" />
+                </div>
+            )}
+
+            {draftStatus === 'prompting' && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm animate-fade-in">
+                    <div>
+                        <h4 className="text-indigo-900 font-black text-lg">Borrador Encontrado</h4>
+                        <p className="text-indigo-700 text-sm mt-1">Detectamos que estabas trabajando en una auditoría y se cerró inesperadamente. ¿Deseas recuperar todas las imágenes, textos y configuraciones que ya tenías cargadas?</p>
+                    </div>
+                    <div className="flex gap-3 flex-shrink-0">
+                        <button onClick={handleDiscardDraft} className="px-4 py-2 text-indigo-600 font-bold bg-white rounded-lg border border-indigo-100 hover:bg-indigo-100 transition">Descartar</button>
+                        <button onClick={handleRestoreDraft} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md">Restaurar Sesión</button>
+                    </div>
+                </div>
+            )}
+
+            {draftStatus === 'active' && (
+                <>
+                    {/* PROGRESS BAR */}
+                    <div className="w-full bg-slate-100 h-2 rounded-full mb-8">
+                        <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: (((currentStep + 1) / 6) * 100) + '%' }}></div>
+                    </div>
 
             {/* STEP 0: Extractor */}
             {currentStep === 0 && (
                 <div className="space-y-6 animate-fade-in">
                     <h3 className="text-xl font-bold flex items-center gap-2"><GlobeIcon className="w-6 h-6 text-blue-500"/> Extractor Mágico (Scraping)</h3>
                     <p className="text-slate-500">Pega el link de la página oficial o Facebook para pre-llenar los datos.</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input type="text" value={scrapeUrl} onChange={e => setScrapeUrl(e.target.value)} placeholder="https://..." className="flex-1 p-3 border rounded-xl" />
-                        <button onClick={handleScrapeUrl} className="bg-slate-900 text-white px-6 rounded-xl font-bold hover:bg-slate-800 transition">
+                        <select 
+                            value={scrapeTimeoutMs} 
+                            onChange={e => setScrapeTimeoutMs(Number(e.target.value))}
+                            className="p-3 border rounded-xl bg-slate-50 text-slate-700 font-medium"
+                            title="Tiempo de espera para sitios lentos"
+                        >
+                            <option value={10000}>10s (Rápido)</option>
+                            <option value={20000}>20s (Normal)</option>
+                            <option value={40000}>40s (Lento)</option>
+                            <option value={60000}>60s (Muy Lento)</option>
+                        </select>
+                        <button onClick={handleScrapeUrl} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition flex items-center justify-center min-w-[120px]">
                             {isLoading ? <SpinnerIcon className="w-5 h-5 animate-spin"/> : 'Extraer'}
                         </button>
                     </div>
@@ -849,22 +958,7 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                     </h3>
                     <p className="text-slate-500 text-sm">Sube capturas de quejas en Facebook, X, etc. La IA las transcribirá y las inyectará al foro como reseñas.</p>
                     
-                    {socialCandidates.length === 0 && (
-                        <div className="flex flex-col sm:flex-row gap-4 bg-pink-50 p-4 rounded-2xl border border-pink-100">
-                            <div className="flex-1">
-                                <label className="text-xs font-bold text-pink-800 uppercase tracking-wider mb-2 block">Red Social Origen</label>
-                                <select value={socialNetwork} onChange={e => setSocialNetwork(e.target.value)} className="w-full p-3 border border-pink-200 rounded-xl bg-white shadow-sm">
-                                    <option value="Facebook">Facebook</option>
-                                    <option value="X (Twitter)">X (Twitter)</option>
-                                    <option value="Instagram">Instagram</option>
-                                    <option value="TikTok">TikTok</option>
-                                    <option value="LinkedIn">LinkedIn</option>
-                                    <option value="Google Maps">Google Maps</option>
-                                    <option value="Otro">Otro Foro/Red</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
+
 
                     {socialCandidates.length === 0 && (
                         <div className="border-2 border-dashed border-pink-300 bg-white rounded-2xl p-8 text-center hover:bg-pink-50 transition">
@@ -891,6 +985,20 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                                     </div>
                                 ))}
                             </div>
+                            <div className="mt-4 mb-4 pt-4 border-t border-slate-200">
+                                <label className="text-xs font-bold text-pink-800 uppercase tracking-wider mb-2 block">¿A qué red social pertenecen estas capturas?</label>
+                                <select value={socialNetwork} onChange={e => setSocialNetwork(e.target.value)} className="w-full p-3 border border-pink-200 rounded-xl bg-white shadow-sm font-medium text-slate-700">
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="X (Twitter)">X (Twitter)</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="LinkedIn">LinkedIn</option>
+                                    <option value="Reddit">Reddit</option>
+                                    <option value="Google Maps">Google Maps</option>
+                                    <option value="Otro">Otro Foro/Red</option>
+                                </select>
+                            </div>
+
                             <button 
                                 onClick={handleAnalyzeSocialPreviews} 
                                 disabled={isLoading}
@@ -1278,7 +1386,8 @@ export const InvestigationEngine: React.FC<InvestigationEngineProps> = ({ onComp
                     </div>
                 </div>
             )}
-
+                </>
+            )}
         </div>
     );
 };

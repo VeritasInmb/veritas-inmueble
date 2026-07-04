@@ -561,12 +561,12 @@ export const AgencyFullEditor: React.FC<AgencyFullEditorProps> = ({ agency, onSa
                                                                                         />
                                                                                         <input
                                                                                             list="roles-publicos"
-                                                                                            value={ev.resenaGenerada?.rolPublico || ''}
+                                                                                            value={ev.resenaGenerada?.rol || ''}
                                                                                             placeholder="Rol público (ej. Anonimizado)"
                                                                                             onChange={(e) => {
                                                                                                 const nuevas = [...fd.evidenciasSociales!];
                                                                                                 if (!nuevas[index].resenaGenerada) nuevas[index].resenaGenerada = {};
-                                                                                                nuevas[index].resenaGenerada.rolPublico = e.target.value;
+                                                                                                nuevas[index].resenaGenerada.rol = e.target.value;
                                                                                                 setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
                                                                                             }}
                                                                                             className="bg-slate-100 border border-slate-200 focus:border-pink-400 outline-none text-slate-600 text-xs px-2 py-0.5 rounded w-40"
@@ -645,12 +645,12 @@ export const AgencyFullEditor: React.FC<AgencyFullEditorProps> = ({ agency, onSa
                                                                                                                     />
                                                                                                                     <input
                                                                                                                         list="roles-publicos"
-                                                                                                                        value={reply.resenaGenerada?.rolPublico || ''}
+                                                                                                                        value={reply.resenaGenerada?.rol || ''}
                                                                                                                         placeholder="Rol (ej. Propietario)"
                                                                                                                         onChange={(e) => {
                                                                                                                             const nuevas = [...fd.evidenciasSociales!];
                                                                                                                             if (!nuevas[index].replies![rIdx].resenaGenerada) nuevas[index].replies![rIdx].resenaGenerada = {};
-                                                                                                                            nuevas[index].replies![rIdx].resenaGenerada.rolPublico = e.target.value;
+                                                                                                                            nuevas[index].replies![rIdx].resenaGenerada.rol = e.target.value;
                                                                                                                             setFd(prev => ({ ...prev, evidenciasSociales: nuevas }));
                                                                                                                         }}
                                                                                                                         className="bg-slate-200/50 border border-slate-200 focus:border-pink-400 outline-none text-slate-600 text-[10px] px-1.5 py-0.5 rounded w-28"

@@ -533,7 +533,7 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                                             </div>
                                             <div className="flex-grow">
                                                 <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
-                                                    <p className={`font-bold text-[10px] md:text-xs ${fb.resenaGenerada?.rolPublico?.toLowerCase() === 'inmobiliaria' ? 'text-red-800' : 'text-slate-900'} ${(fb.resenaGenerada?.rolPublico || 'Usuario Anonimizado').includes('Anonimizado') ? 'line-through decoration-slate-400' : ''}`}>{fb.resenaGenerada?.rolPublico || 'Usuario Anonimizado'}</p>
+                                                    <p className={`font-bold text-[10px] md:text-xs ${fb.resenaGenerada?.rol?.toLowerCase() === 'inmobiliaria' ? 'text-red-800' : 'text-slate-900'} ${(fb.resenaGenerada?.rol || 'Usuario Anonimizado').includes('Anonimizado') ? 'line-through decoration-slate-400' : ''}`}>{fb.resenaGenerada?.rol || 'Usuario Anonimizado'}</p>
                                                 </div>
                                                 <p className="text-[10px] md:text-xs text-slate-800 leading-relaxed mb-2 whitespace-pre-wrap font-medium italic">"{fb.resenaGenerada?.comentario || fb.resenaGenerada?.textoExtracto || "Contenido no disponible"}"</p>
                                                 
@@ -542,7 +542,7 @@ export const AgencyProfile: React.FC<AgencyProfileProps> = ({ agency, currentUse
                                                     {fb.replies.map((reply, rIdx) => (
                                                         <div key={rIdx} className={`${theme.bg} rounded-md px-2 py-1`}>
                                                             <div className="flex justify-between items-baseline mb-0.5">
-                                                                <span className={`font-bold text-[9px] md:text-[10px] ${reply.resenaGenerada?.rolPublico?.toLowerCase() === 'inmobiliaria' ? 'text-red-800' : 'text-slate-900'} ${(reply.resenaGenerada?.rolPublico || 'Otro Afectado').includes('Anonimizado') || (reply.resenaGenerada?.rolPublico || 'Otro Afectado').includes('Afectado') ? 'line-through decoration-slate-400' : ''}`}>{reply.resenaGenerada?.rolPublico || 'Otro Afectado'}</span>
+                                                                <span className={`font-bold text-[9px] md:text-[10px] ${reply.resenaGenerada?.rol?.toLowerCase() === 'inmobiliaria' ? 'text-red-800' : 'text-slate-900'} ${(reply.resenaGenerada?.rol || 'Otro Afectado').includes('Anonimizado') || (reply.resenaGenerada?.rol || 'Otro Afectado').includes('Afectado') ? 'line-through decoration-slate-400' : ''}`}>{reply.resenaGenerada?.rol || 'Otro Afectado'}</span>
                                                             </div>
                                                             <p className="text-slate-700 text-[9px] md:text-[10px] italic font-medium">"{reply.resenaGenerada?.comentario || reply.resenaGenerada?.textoExtracto || "Contenido no disponible"}"</p>
                                                         </div>

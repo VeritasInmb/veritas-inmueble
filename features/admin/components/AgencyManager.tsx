@@ -30,17 +30,28 @@ export const AgencyManager: React.FC<{ setDeletingItem: (item: any) => void }> =
     const handleSaveAgency = async (ad: Omit<Inmobiliaria, 'id'> & { id?: string }) => { 
         try { 
             const { syncAgencyScores } = await import('../../../services/firebase');
+            
+            const processData = (d: any) => {
+                if (!d.imageUrl && d.nombre) {
+                    d.imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nombre)}&background=random`;
+                }
+                return JSON.parse(JSON.stringify(d));
+            };
+
             if (ad.id) { 
                 const { id, ...data } = ad; 
-                await db.collection("inmobiliarias").doc(id).set(data, { merge: true }); 
+                const cleanData = processData(data);
+                await db.collection("inmobiliarias").doc(id).set(cleanData, { merge: true }); 
                 await syncAgencyScores(id);
             } else { 
                 const { id, ...data } = ad; 
-                const docRef = await db.collection("inmobiliarias").add(data); 
+                const cleanData = processData(data);
+                const docRef = await db.collection("inmobiliarias").add(cleanData); 
                 await syncAgencyScores(docRef.id);
             } 
-        } catch (e) { 
-            console.error(e); 
+        } catch (e: any) { 
+            console.error("Error al guardar la agencia en Firestore:", e); 
+            alert("Hubo un error al guardar la información: " + (e?.message || e));
         } 
         setIsAgencyModalOpen(false); 
         setEditingAgency(null); 
